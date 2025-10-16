@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     vector_backend: Literal["chroma", "stub"] = Field(default="chroma", alias="VECTOR_BACKEND")
     vector_store_path: Path = Field(default=Path("data/chroma"), alias="VECTOR_STORE_PATH")
     sql_db_path: Path = Field(default=Path("data/app.sqlite"), alias="SQL_DB_PATH")
+    storage_path: Path = Field(default=Path("data/storage"), alias="STORAGE_PATH")
 
     # Tracing & Logging
     trace_level: Literal["debug", "info", "warning", "error"] = Field(
@@ -67,6 +68,7 @@ class Settings(BaseSettings):
         self.vector_store_path.parent.mkdir(parents=True, exist_ok=True)
         self.sql_db_path.parent.mkdir(parents=True, exist_ok=True)
         self.trace_file.parent.mkdir(parents=True, exist_ok=True)
+        self.storage_path.mkdir(parents=True, exist_ok=True)
 
 
 # Global settings instance
