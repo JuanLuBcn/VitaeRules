@@ -35,10 +35,10 @@ async def main_async() -> None:
     
     # Create tool registry and register tools
     tool_registry = ToolRegistry()
-    tool_registry.register("task_tool", TaskTool(settings=settings))
-    tool_registry.register("list_tool", ListTool(settings=settings))
-    tool_registry.register("temporal_tool", TemporalTool())
-    tool_registry.register("memory_note_tool", MemoryNoteTool(memory_service=memory_service))
+    tool_registry.register(TaskTool())
+    tool_registry.register(ListTool())
+    tool_registry.register(TemporalTool())
+    tool_registry.register(MemoryNoteTool(memory_service=memory_service))
     
     tracer.info("Services initialized", extra={"tools": len(tool_registry.list_tools())})
     
