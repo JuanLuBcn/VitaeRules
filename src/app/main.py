@@ -3,7 +3,14 @@
 import asyncio
 import sys
 
+from .adapters.telegram import VitaeBot
 from .config import get_settings
+from .memory import MemoryService
+from .tools.registry import ToolRegistry
+from .tools.list_tool import ListTool
+from .tools.task_tool import TaskTool
+from .tools.temporal_tool import TemporalTool
+from .tools.memory_note_tool import MemoryNoteTool
 from .tracing import TraceEvent, get_tracer
 
 
@@ -20,14 +27,34 @@ async def main_async() -> None:
         vector_backend=settings.vector_backend,
     )
 
-    # TODO: Initialize and start Telegram bot adapter
+    # Initialize services
+    tracer.info("Initializing services...")
+    
+    # Create memory service
+    memory_service = MemoryService()
+    
+    # Create tool registry and register tools
+    tool_registry = ToolRegistry()
+    tool_registry.register("task_tool", TaskTool(settings=settings))
+    tool_registry.register("list_tool", ListTool(settings=settings))
+    tool_registry.register("temporal_tool", TemporalTool())
+    tool_registry.register("memory_note_tool", MemoryNoteTool(memory_service=memory_service))
+    
+    tracer.info("Services initialized", extra={"tools": len(tool_registry.list_tools())})
+    
+    # Create and start Telegram bot
+    tracer.info("Starting Telegram bot...")
+    bot = VitaeBot(
+        settings=settings,
+        memory_service=memory_service,
+        tool_registry=tool_registry,
+    )
+    
     tracer.info("VitaeRules is ready!")
-    tracer.info("Press Ctrl+C to stop")
+    tracer.info("Telegram bot is running. Press Ctrl+C to stop")
 
     try:
-        # Keep running
-        while True:
-            await asyncio.sleep(1)
+        await bot.run()
     except KeyboardInterrupt:
         tracer.info("Shutting down...")
         tracer.trace(TraceEvent.APP_STOP)

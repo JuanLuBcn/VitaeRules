@@ -2,21 +2,58 @@
 
 ## 🎯 Current Status
 
-You have completed **Phase 3** of the VitaeRules rewrite! Here's what's ready:
+You have completed **Phase 4** (Retrieval Crew) and **Phase 6** (Telegram Bot) of the VitaeRules rewrite! Here's what's ready:
 
 ✅ **Phase 1**: Memory Foundation (STM + LTM)  
-✅ **Phase 2**: Tool Registry & Core Tools (Task, List, Temporal)  
-✅ **Phase 3**: Capture Crew (Planner → Clarifier → ToolCaller)
+✅ **Phase 2**: Tool Registry & Core Tools (Task, List, Temporal, Memory)  
+✅ **Phase 3**: Capture Crew (Planner → Clarifier → ToolCaller)  
+✅ **Phase 4**: Retrieval Crew (QueryPlanner → Retriever → Composer)  
+✅ **Phase 6**: Telegram Bot Adapter (Full message routing, approvals, clarifications)
 
-**Progress**: 127/130 tests passing | 84% coverage | All linting clean
+**Progress**: 160/164 tests passing | 52% coverage with Phase 6 | All linting clean
 
 ---
 
 ## 🚀 How to Interact with Your Bot
 
-### Option 1: CLI Demo (Quick Test - Works Now!)
+### Option 1: Telegram Bot (Recommended - Fully Implemented!)
 
-Test the Capture Crew immediately without Telegram:
+Your Telegram bot is ready to use!
+
+```powershell
+# Start the Telegram bot
+python -m app.main
+```
+
+The bot will:
+- ✅ Connect to Telegram with your token
+- ✅ Route questions to Retrieval Crew
+- ✅ Route actions/notes to Capture Crew
+- ✅ Handle approvals via inline keyboards
+- ✅ Ask clarifying questions when needed
+
+**Available Commands:**
+- `/start` - Welcome message and help
+- `/help` - Show all available features
+- `/status` - Check bot and memory status
+
+**Example Messages:**
+- **Create actions**: "Create task Review PR", "Create list Shopping", "Add milk to Shopping"
+- **Take notes**: "Note: had a great meeting today"
+- **Set reminders**: "Remind me to call mom tomorrow at 3pm"
+- **Ask questions**: "What did I do yesterday?", "What tasks do I have?"
+
+**How it works:**
+1. Send any message to the bot
+2. The bot detects if it's a question (→ Retrieval) or action (→ Capture)
+3. For actions, you may get approval requests via inline buttons
+4. For questions, you get answers with citations from your memory
+
+---
+
+### Option 2: CLI Demo (Quick Local Test)
+
+Test the Capture Crew without Telegram:
 
 ```powershell
 # Run the interactive CLI demo
@@ -30,39 +67,7 @@ python -m app.demo_cli
 - `list tasks`
 - `quit`
 
-**Note**: The CLI demo uses simplified planning (keyword matching). It doesn't call the LLM yet, but demonstrates the full tool execution pipeline.
-
----
-
-### Option 2: Telegram Bot (Needs Phase 6)
-
-To interact via Telegram, you need to implement **Phase 6: Telegram Adapter**.
-
-**What you have:**
-- ✅ Telegram token in `.env` file
-- ✅ All core functionality (Memory, Tools, Capture Crew)
-
-**What you need:**
-- ⏳ Telegram adapter (`src/app/adapters/telegram.py`)
-- ⏳ Connect adapter to Capture Crew
-- ⏳ Handle async message flow
-
-**Quick implementation steps:**
-
-1. **Install telegram library** (if not already):
-```powershell
-poetry add python-telegram-bot[ext]
-```
-
-2. **Create Telegram adapter** that:
-   - Listens for messages
-   - Forwards to Capture Crew
-   - Returns formatted responses
-   - Handles approvals via inline keyboards
-
-3. **Update `src/app/main.py`** to start the Telegram bot
-
-Would you like me to implement the Telegram adapter now? (It's about 200 lines of code)
+**Note**: The CLI demo uses simplified planning (keyword matching). The Telegram bot uses the same backend but with a better interface.
 
 ---
 
@@ -91,14 +96,24 @@ SQL_DB_PATH=data/app.sqlite      # Short-term memory
 ## 📋 What Works Right Now
 
 ### Core Functionality
-- ✅ **Short-term memory** (conversation history)
+- ✅ **Short-term memory** (conversation history per chat)
 - ✅ **Long-term memory** (vector search with ChromaDB)
 - ✅ **Task management** (create, complete, list, update, delete)
 - ✅ **List management** (create, add items, complete items, delete)
 - ✅ **Temporal parsing** (dates, times, durations)
 - ✅ **Plan generation** (intent detection, entity extraction)
 - ✅ **Tool execution** (with approval gates)
+- ✅ **Question answering** (from memory with citations)
+- ✅ **Telegram bot** (message routing, approvals, clarifications)
 - ✅ **Tracing** (structured logging to `data/trace.jsonl`)
+
+### Telegram Bot Features
+- 🔍 **Smart routing**: Automatically detects questions vs actions
+- ✅ **Approval flow**: Inline keyboard for destructive operations
+- 💬 **Clarifications**: Asks for missing information (e.g., due dates, priorities)
+- 📚 **Grounded answers**: All facts cite sources from your memory
+- 🔒 **Zero-evidence policy**: Never hallucinates information
+- 👤 **Per-user memory**: Conversation history isolated by chat ID
 
 ### Sample Commands (via CLI demo)
 ```
@@ -186,24 +201,45 @@ tests/
 python -m app.demo_cli
 ```
 
-**B) Implement Telegram Adapter** (Phase 6)
-- Would connect your bot to Telegram
-- Handle real user conversations
-- ~30 minutes to implement
-
-**C) Add LLM-based Planning**
+**B) Add LLM-based Planning**
 - Replace keyword matching with real LLM calls
 - Use Ollama or OpenRouter
-- Would make planning much smarter
+- Would make planning much smarter and more accurate
+- Required for: Complex intent detection, entity extraction, clarification generation
 
-**D) Continue to Phase 4** (Retrieval Crew)
-- Build QueryPlanner → Retriever → Composer
-- Answer questions from memory
-- "What did I do yesterday?"
+**C) Implement Phase 5** (Diary Crew)
+- Build DiaryPrompt → Analyst → Persist workflow
+- Daily reflective journaling
+- "Generate my diary entry for today"
+
+**D) Add Integrations** (Google, LinkedIn, etc.)
+- Google Calendar/Tasks sync
+- LinkedIn post generation
+- Action approval workflows
 
 ---
 
 ## 🐛 Troubleshooting
+
+### Telegram Bot doesn't connect
+```powershell
+# 1. Verify token in .env file
+cat .env | Select-String TELEGRAM_BOT_TOKEN
+
+# 2. Check internet connection
+# The bot needs to reach api.telegram.org
+
+# 3. Test token manually
+python -c "from telegram import Bot; import asyncio; asyncio.run(Bot('YOUR_TOKEN').get_me())"
+
+# 4. Check logs in data/trace.jsonl
+cat data/trace.jsonl | Select-String "telegram"
+```
+
+### Bot responds slowly or times out
+- The bot uses keyword-based planning (fast) but will be slower with LLM integration
+- Check if Ollama is running if you've enabled LLM-based planning
+- Network latency to Telegram API may cause delays
 
 ### CLI Demo doesn't start
 ```powershell
@@ -211,21 +247,30 @@ python -m app.demo_cli
 python --version  # Should be 3.11 or 3.12
 
 # Reinstall dependencies
-poetry install
+pip install -e .
 ```
 
 ### "Tool not found" errors
 The tool registry initializes on first run. If you see errors, check:
 ```powershell
 # Verify tools are registered
-python -c "from app.tools.registry import get_registry; print(get_registry().list_tools())"
+python -c "from app.tools.registry import ToolRegistry; r = ToolRegistry(); print(list(r._tools.keys()))"
 ```
 
 ### Database locked errors
 ```powershell
 # Clear data directory
-rm -r data/
+Remove-Item -Recurse -Force data/
 # Will auto-recreate on next run
+```
+
+### Module import errors
+```powershell
+# Ensure you're in the venv
+.\.venv\Scripts\Activate.ps1
+
+# Check if package is installed
+pip show vitaerules
 ```
 
 ---
@@ -242,16 +287,25 @@ rm -r data/
 ## 🤔 Questions?
 
 **Q: Can I use this without Telegram?**  
-A: Yes! Use the CLI demo (`python -m app.demo_cli`)
+A: Yes! Use the CLI demo (`python -m app.demo_cli`), but the Telegram bot provides the best experience.
 
 **Q: Do I need Ollama running?**  
-A: Not for the CLI demo (uses keyword matching). For real LLM-based planning, yes.
+A: Not yet! The bot uses keyword-based planning (fast, works offline). For smarter planning, you'll need LLM integration in the future.
+
+**Q: Can I ask questions in Telegram?**  
+A: Yes! The Retrieval Crew is integrated. Ask "What did I do yesterday?" and get answers with citations from your memory.
+
+**Q: Will the bot approve destructive actions automatically?**  
+A: No! Deletions and memory modifications require your approval via inline keyboard buttons.
 
 **Q: Can I add more tools?**  
-A: Absolutely! Create a new class inheriting from `BaseTool` in `src/app/tools/`
+A: Absolutely! Create a new class inheriting from `BaseTool` in `src/app/tools/` and register it in `main.py`.
 
 **Q: How do I reset everything?**  
 A: Delete the `data/` directory. It will be recreated on next run.
+
+**Q: Is my data private?**  
+A: Yes! Everything is stored locally in the `data/` folder. Nothing is sent to external services except Telegram API messages.
 
 ---
 
