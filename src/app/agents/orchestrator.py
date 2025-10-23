@@ -18,6 +18,9 @@ from app.agents import (
 )
 from app.llm import LLMService
 from app.memory import MemoryService
+from app.tools.list_tool import ListTool
+from app.tools.task_tool import TaskTool
+from app.crews.retrieval import RetrievalCrew
 
 
 class AgentOrchestrator:
@@ -31,12 +34,17 @@ class AgentOrchestrator:
         """Initialize orchestrator with all agents."""
         self.classifier = IntentClassifier(llm_service)
         
+        # Initialize tools and crews
+        list_tool = ListTool()
+        task_tool = TaskTool()
+        retrieval_crew = RetrievalCrew(memory_service=memory_service)
+        
         # Initialize specialized agents
         self.agents = {
-            IntentType.LIST: ListAgent(llm_service, memory_service),
-            IntentType.TASK: TaskAgent(llm_service, memory_service),
+            IntentType.LIST: ListAgent(llm_service, list_tool),
+            IntentType.TASK: TaskAgent(llm_service, task_tool),
             IntentType.NOTE: NoteAgent(llm_service, memory_service),
-            IntentType.QUERY: QueryAgent(llm_service, memory_service),
+            IntentType.QUERY: QueryAgent(memory_service, retrieval_crew),
         }
         
         # Track pending confirmations per chat

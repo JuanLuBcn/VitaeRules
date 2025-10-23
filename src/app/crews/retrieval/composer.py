@@ -10,6 +10,7 @@ from datetime import datetime
 from crewai import Agent, Task
 
 from app.contracts.query import Citation, GroundedAnswer, Query
+from app.llm import get_llm_service
 from app.memory import MemoryItem
 from app.tracing import get_tracer
 
@@ -80,28 +81,24 @@ def compose_answer(
     query: Query, memories: list[MemoryItem], chat_id: str, user_id: str, llm
 ) -> GroundedAnswer:
     """
-    Compose a grounded answer from retrieved memories.
+    Compose a grounded answer from retrieved memories using LLM.
 
     Args:
         query: The user's structured query
         memories: Retrieved memory items
         chat_id: Chat context identifier
         user_id: User identifier
-        llm: Language model for the agent
+        llm: Language model for the agent (unused, kept for compatibility)
 
     Returns:
         GroundedAnswer with citations and zero-evidence enforcement
     """
     try:
-        agent = create_composer_agent(llm)
-        task = create_composition_task(agent, query, memories, chat_id, user_id)
-
-        # TODO: Actually execute CrewAI task to compose answer with LLM
-        # For now, provide basic composition logic
         logger.info(
             f"Composing answer for '{query.query_text}' from {len(memories)} memories"
         )
 
+        # Handle no memories case
         if not memories:
             return GroundedAnswer(
                 query=query.query_text,
@@ -123,22 +120,78 @@ def compose_answer(
             for m in memories[:5]  # Limit to top 5 citations
         ]
 
-        # Compose basic answer
-        answer_parts = []
-        for i, memory in enumerate(memories[:3], 1):
-            if memory.content:
-                answer_parts.append(f"[{i}] {memory.content[:150]}...")
+        # Build context from memories for LLM
+        memory_context = "\n\n".join([
+            f"[{i+1}] {m.title or 'Untitled'}\nDate: {m.created_at}\nContent: {m.content}"
+            for i, m in enumerate(memories)
+        ])
 
-        answer = f"Based on my memory: {' '.join(answer_parts)}"
+        # Use LLM to compose natural answer
+        llm_service = get_llm_service()
+        
+        prompt = f"""Answer the user's question using ONLY the information from these memories.
 
-        return GroundedAnswer(
-            query=query.query_text,
-            answer=answer,
-            citations=citations,
-            confidence=0.7 if len(memories) >= 3 else 0.5,
-            has_evidence=True,
-            reasoning=f"Composed from {len(memories)} relevant memories",
-        )
+User's Question: "{query.query_text}"
+
+Available Memories:
+{memory_context}
+
+Instructions:
+1. FIRST, determine which memories are actually relevant to answering the question
+   - Ignore memories that are just similar questions or unrelated topics
+   - Focus on memories that contain the actual answer or related facts
+2. If NO memories contain relevant information to answer the question, say:
+   "I don't have information about that in my memory yet."
+3. If you find relevant memories:
+   - Provide a direct, natural answer to the question
+   - Use inline citations [1], [2], etc. to reference specific memories
+   - ONLY use information from the relevant memories
+4. Be conversational and helpful
+5. Keep the answer concise but complete
+
+IMPORTANT: Don't just list the memories. Actually answer the question if possible.
+
+Provide your answer:"""
+
+        system_prompt = """You are a helpful assistant that answers questions based ONLY on the provided memories.
+You are intelligent about filtering out irrelevant memories - if a memory is just another question or doesn't contain the answer, ignore it.
+Always cite your sources with [1], [2], etc. Never make up information."""
+
+        try:
+            answer_text = llm_service.generate(prompt, system_prompt)
+            
+            # Calculate confidence based on quality of memories
+            confidence = 0.9 if len(memories) >= 2 else 0.7
+            
+            return GroundedAnswer(
+                query=query.query_text,
+                answer=answer_text,
+                citations=citations,
+                confidence=confidence,
+                has_evidence=True,
+                reasoning=f"Composed from {len(memories)} relevant memories using LLM",
+            )
+            
+        except Exception as llm_error:
+            logger.warning(f"LLM composition failed, using fallback: {llm_error}")
+            
+            # Fallback to basic composition if LLM fails
+            answer_parts = []
+            for i, memory in enumerate(memories[:3], 1):
+                if memory.content:
+                    snippet = memory.content[:100] + "..." if len(memory.content) > 100 else memory.content
+                    answer_parts.append(f"[{i}] {snippet}")
+
+            answer = f"Based on my memory: {' '.join(answer_parts)}"
+
+            return GroundedAnswer(
+                query=query.query_text,
+                answer=answer,
+                citations=citations,
+                confidence=0.5,
+                has_evidence=True,
+                reasoning=f"Composed from {len(memories)} memories (fallback mode)",
+            )
 
     except Exception as e:
         logger.error(f"Answer composition failed: {e}")

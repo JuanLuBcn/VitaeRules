@@ -72,34 +72,31 @@ class RetrievalCrew:
         Returns:
             RetrievalResult with query, memories, and grounded answer
         """
-        self.tracer.info(f"Starting retrieval for question: {user_question}")
-
         try:
             # Step 1: Plan the query
+            print(f"    ├─ Planning query...")
             query = plan_query_from_question(
                 user_question, context.chat_id, context.user_id, self.llm
             )
-            self.tracer.info(
-                f"Query planned: intent={query.intent.value}, filters={query.filters.model_dump()}"
-            )
+            print(f"    ├─ Query: {query.intent.value}")
 
             # Step 2: Retrieve memories
+            print(f"    ├─ Searching memories...")
             memories = retrieve_memories(
                 query, context.chat_id, context.user_id, context.memory_service, self.llm
             )
-            self.tracer.info(f"Retrieved {len(memories)} memories")
+            print(f"    ├─ Retrieved: {len(memories)} memories")
 
             # Step 3: Compose answer
+            print(f"    └─ Composing answer...")
             answer = compose_answer(
                 query, memories, context.chat_id, context.user_id, self.llm
-            )
-            self.tracer.info(
-                f"Answer composed: has_evidence={answer.has_evidence}, confidence={answer.confidence}"
             )
 
             return RetrievalResult(query=query, memories=memories, answer=answer)
 
         except Exception as e:
+            print(f"    ❌ Retrieval workflow failed: {str(e)}")
             self.tracer.error(f"Retrieval workflow failed: {e}")
 
             # Return error response

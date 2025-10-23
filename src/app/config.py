@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # LLM Configuration
     llm_backend: Literal["ollama", "openrouter"] = Field(default="ollama", alias="LLM_BACKEND")
     ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
-    ollama_model: str = Field(default="llama3.2:3b", alias="OLLAMA_MODEL")
+    ollama_model: str = Field(default="qwen3:1.7b", alias="OLLAMA_MODEL")
     openrouter_api_key: str | None = Field(default=None, alias="OPENROUTER_API_KEY")
     openrouter_model: str = Field(default="anthropic/claude-3.5-sonnet", alias="OPENROUTER_MODEL")
 

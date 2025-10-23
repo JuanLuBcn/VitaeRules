@@ -4,7 +4,9 @@ The Capture Crew coordinates the PlannerAgent, ClarifierAgent, and ToolCallerAge
 to process user input, gather missing information, and execute tool actions.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from app.contracts.plan import Plan
 from app.contracts.tools import ToolResult
@@ -30,8 +32,8 @@ class CaptureContext:
     chat_id: str
     user_id: str
     auto_approve: bool = False
-    approval_callback = None
-    clarification_callback = None
+    approval_callback: Callable[[str, dict[str, Any]], bool] | None = None
+    clarification_callback: Callable[[list[str]], dict[str, str]] | None = None
 
 
 @dataclass
@@ -82,55 +84,34 @@ class CaptureCrew:
         Returns:
             CaptureResult with plan, execution results, and summary
         """
-        logger.info(
-            "capture.start",
-            extra={
-                "user_input": user_input[:100],
-                "chat_id": context.chat_id,
-                "user_id": context.user_id,
-            },
-        )
-
         # Step 1: Planning
-        # Add conversation context from memory
+        print(f"    ├─ Planning...")
         await self._get_conversation_context(context.chat_id)
 
-        # Generate plan
-        plan = await plan_from_input(
+        plan = plan_from_input(
             user_input=user_input,
             chat_id=context.chat_id,
             user_id=context.user_id,
             llm=self.llm,
         )
 
-        logger.info(
-            "capture.plan_created",
-            extra={
-                "intent": plan.intent,
-                "confidence": plan.confidence,
-                "followup_count": len(plan.followups),
-                "action_count": len(plan.actions),
-            },
-        )
+        print(f"    ├─ Plan: {plan.intent} ({plan.confidence:.0%} confidence)")
+        print(f"    ├─ Actions: {len(plan.actions)}")
 
         # Step 2: Clarification (if needed)
         clarifications_asked = 0
 
         if plan.followups:
-            # Ask clarification questions
+            print(f"    ├─ Clarifying ({len(plan.followups)} questions)...")
             answers = await self._handle_clarifications(plan, context)
             clarifications_asked = len(answers)
 
-            # Update plan with answers
             if answers:
                 plan = update_plan_with_answers(plan, answers)
-
-                logger.info(
-                    "capture.plan_updated",
-                    extra={"answers_count": len(answers), "chat_id": context.chat_id},
-                )
+                print(f"    ├─ Clarified: {len(answers)} answers received")
 
         # Step 3: Execution
+        print(f"    └─ Executing actions...")
         results = await execute_plan_actions(
             plan=plan,
             chat_id=context.chat_id,
@@ -144,15 +125,6 @@ class CaptureCrew:
 
         # Save to conversation memory
         await self._save_to_memory(user_input, plan, results, context)
-
-        logger.info(
-            "capture.complete",
-            extra={
-                "clarifications": clarifications_asked,
-                "actions_executed": len(results),
-                "chat_id": context.chat_id,
-            },
-        )
 
         return CaptureResult(
             plan=plan,

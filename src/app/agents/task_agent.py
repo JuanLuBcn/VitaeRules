@@ -23,10 +23,10 @@ class TaskAgent(BaseAgent):
     - Query tasks: "What's on my task list?"
     """
     
-    def __init__(self, llm_service: LLMService, memory_service=None):
+    def __init__(self, llm_service: LLMService, task_tool: TaskTool):
         """Initialize task agent."""
-        super().__init__(llm_service, memory_service)
-        self.task_tool = TaskTool()
+        self.llm = llm_service
+        self.task_tool = task_tool
     
     @property
     def name(self) -> str:

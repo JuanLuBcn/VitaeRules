@@ -22,10 +22,10 @@ class QueryAgent(BaseAgent):
     - "What are my notes about coffee?"
     """
     
-    def __init__(self, llm_service: LLMService, memory_service=None):
+    def __init__(self, memory_service, retrieval_crew: RetrievalCrew):
         """Initialize query agent."""
-        super().__init__(llm_service, memory_service)
-        self.retrieval_crew = RetrievalCrew(memory_service=memory_service)
+        self.memory = memory_service
+        self.retrieval_crew = retrieval_crew
     
     @property
     def name(self) -> str:

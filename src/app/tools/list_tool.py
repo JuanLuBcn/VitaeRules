@@ -210,7 +210,19 @@ class ListTool(BaseTool):
 
     async def _add_item(self, args: dict[str, Any]) -> dict[str, Any]:
         """Add an item to a list."""
-        list_id = await self._resolve_list_id(args)
+        # Try to resolve list ID, auto-create if not found
+        try:
+            list_id = await self._resolve_list_id(args)
+        except ValueError as e:
+            # List doesn't exist - auto-create it
+            list_name = args.get("list_name")
+            if not list_name:
+                raise ValueError(f"Cannot add item: {str(e)}")
+            
+            self.tracer.info(f"Auto-creating list: {list_name}")
+            create_result = await self._create_list(args)
+            list_id = create_result["list_id"]
+        
         item_text = args.get("item_text")
         if not item_text:
             raise ValueError("item_text is required for add_item")
@@ -395,9 +407,14 @@ class ListTool(BaseTool):
         if not list_name:
             raise ValueError("Either list_id or list_name is required")
 
-        # Look up by name
+        # Normalize list name (case-insensitive lookup)
+        normalized_name = list_name.strip().lower()
+
+        # Look up by name (case-insensitive)
         with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("SELECT id FROM lists WHERE name = ?", (list_name,))
+            cursor = conn.execute(
+                "SELECT id FROM lists WHERE LOWER(name) = ?", (normalized_name,)
+            )
             row = cursor.fetchone()
             if not row:
                 raise ValueError(f"List not found: {list_name}")
