@@ -86,12 +86,14 @@ Categorías de intención:
    - "La contraseña es abc123"
    - "Nota: la reunión fue bien"
 
-2. **task** - Crear o gestionar tareas/recordatorios
+2. **task** - Crear o gestionar tareas/recordatorios, ver tareas
    Ejemplos:
    - "Recuérdame llamar a Juan mañana"
    - "Tengo que terminar el informe para el viernes"
    - "Crea una tarea para comprar comida"
    - "Marca la lavandería como hecha"
+   - "¿Cuáles son mis tareas?"
+   - "Muéstrame mis tareas pendientes"
 
 3. **list** - Gestionar listas (añadir, eliminar, ver elementos)
    Ejemplos:
@@ -100,21 +102,25 @@ Categorías de intención:
    - "Quita huevos de la lista"
    - "¿Qué hay en mi lista de la compra?"
    - "Muéstrame la lista"
+   - "¿Qué hay en la lista?"
 
-4. **query** - Hacer preguntas, buscar información
+4. **query** - Buscar información general guardada, preguntas sobre el pasado
    Ejemplos:
    - "¿Qué hice ayer?"
    - "¿Cuándo es mi cita con el dentista?"
    - "Cuéntame sobre mi reunión con Sara"
-   - "¿Qué hay en mi lista de tareas?"
+   - "¿Qué guardé sobre María?"
+   - "¿Qué sé de Juan?"
 
 5. **unknown** - No se puede determinar o no está claro
 
 REGLAS CRÍTICAS:
-- Si el mensaje contiene "lista" o "list" → probablemente "list"
-- Si el mensaje contiene "?" → probablemente "query" 
-- Si el mensaje dice "recuerda", "nota", "guarda" → probablemente "note"
-- Si el mensaje dice "recuérdame", "tarea", "tengo que" → probablemente "task"
+- "¿Qué hay en la lista?" o "¿Qué hay en mi lista de X?" → "list"
+- "¿Cuáles son mis tareas?" o "Muestra tareas" → "task"
+- "¿Qué guardé sobre X?" o "¿Qué sé de X?" → "query"
+- Si el mensaje contiene "recuerda", "nota", "guarda" → "note"
+- Si el mensaje dice "recuérdame", "tarea", "tengo que" → "task"
+- Si el mensaje dice "añade", "agrega" con "lista" → "list"
 - Devuelve confianza 0.0-1.0 (1.0 = muy seguro)
 - Si es ambiguo, devuelve "unknown" con baja confianza
 
