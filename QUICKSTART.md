@@ -78,7 +78,7 @@ Your `.env` file is already set up:
 ```bash
 # Core settings
 APP_ENV=dev
-TELEGRAM_BOT_TOKEN=8487321971:AAFPrlt4oLqdBL1icMDdkIk-cv4VUmxKuf4
+TELEGRAM_BOT_TOKEN=your_token_here
 
 # LLM (for actual planning - not used in CLI demo)
 LLM_BACKEND=ollama
