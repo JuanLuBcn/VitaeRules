@@ -2,7 +2,17 @@
 
 import asyncio
 import logging
+import os
 import sys
+
+# Set UTF-8 encoding for Windows console to handle emoji characters
+if sys.platform == "win32":
+    if sys.stdout.encoding != 'utf-8':
+        import io
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    if sys.stderr.encoding != 'utf-8':
+        import io
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 from .adapters.telegram import VitaeBot
 from .config import get_settings
@@ -18,13 +28,20 @@ from .tracing import TraceEvent, get_tracer
 
 def configure_logging():
     """Configure logging to reduce noise."""
-    # Suppress verbose library logs
+    # Enable detailed CrewAI logging for debugging
+    os.environ["CREWAI_VERBOSE_LEVEL"] = "2"  # Maximum verbosity
+    os.environ["CREWAI_LOG_LEVEL"] = "DEBUG"
+    
+    # Suppress verbose library logs (but keep CrewAI)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("telegram").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("openai").setLevel(logging.WARNING)
     logging.getLogger("langchain").setLevel(logging.WARNING)
+    
+    # Enable CrewAI logging
+    logging.getLogger("crewai").setLevel(logging.DEBUG)
 
 
 async def main_async() -> None:
@@ -36,6 +53,21 @@ async def main_async() -> None:
 
     print("\n🚀 Starting VitaeRules Telegram Bot...")
     print("="*80)
+    
+    # Check Ollama health/response time
+    import time
+    import requests
+    print("🔍 Checking Ollama health...")
+    try:
+        start = time.time()
+        response = requests.get(f"{settings.ollama_base_url}/api/tags", timeout=5)
+        health_time = time.time() - start
+        if response.status_code == 200:
+            print(f"✓ Ollama responding in {health_time:.3f}s")
+        else:
+            print(f"⚠️  Ollama returned status {response.status_code} in {health_time:.3f}s")
+    except Exception as e:
+        print(f"❌ Ollama health check failed: {e}")
     
     # Initialize services
     print("⚙️  Initializing services...")

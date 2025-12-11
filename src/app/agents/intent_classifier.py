@@ -52,6 +52,7 @@ class IntentClassifier:
             
             intent_str = result.get("intent", "unknown")
             confidence = result.get("confidence", 0.0)
+            reasoning = result.get("reasoning", "")
             
             # Map to enum
             try:
@@ -62,7 +63,12 @@ class IntentClassifier:
             
             logger.info(
                 "Intent classified",
-                extra={"intent": intent.value, "confidence": confidence}
+                extra={
+                    "intent": intent.value, 
+                    "confidence": confidence,
+                    "reasoning": reasoning,
+                    "message": message[:100]
+                }
             )
             
             return intent, confidence
@@ -73,73 +79,116 @@ class IntentClassifier:
     
     def _build_classification_prompt(self, message: str) -> str:
         """Build classification prompt."""
-        return f"""Clasifica este mensaje del usuario en UNA categoría de intención.
+        return f"""Analiza la INTENCIÓN SEMÁNTICA de este mensaje y clasifícalo en UNA categoría.
 
 Mensaje del usuario: "{message}"
 
-Categorías de intención:
+## Categorías (piensa en el PROPÓSITO, no en palabras específicas):
 
-1. **note** - Guardar información, memorias, hechos
-   Ejemplos:
-   - "Recuerda que a Juan le gusta el café"
-   - "El cumpleaños de Sara es el 15 de junio"
-   - "La contraseña es abc123"
-   - "Nota: la reunión fue bien"
+### 1. **task** - Acciones FUTURAS que el usuario debe hacer
+**Pregunta clave:** ¿Es algo que el usuario necesita HACER más adelante?
+- Crear recordatorios para acciones futuras
+- Consultar tareas pendientes
+- Marcar tareas como completadas
+- Cualquier acción con temporalidad futura
 
-2. **task** - Crear o gestionar tareas/recordatorios, ver tareas
-   Ejemplos:
-   - "Recuérdame llamar a Juan mañana"
-   - "Tengo que terminar el informe para el viernes"
-   - "Crea una tarea para comprar comida"
-   - "Marca la lavandería como hecha"
-   - "¿Cuáles son mis tareas?"
-   - "Muéstrame mis tareas pendientes"
+Ejemplos:
+- "Recuérdame llamar a Juan" → acción futura
+- "Tengo que comprar leche" → acción pendiente
+- "Debo terminar el informe" → obligación futura
+- "Avísame mañana" → recordatorio temporal
+- "¿Qué tareas tengo?" → consulta de pendientes
 
-3. **list** - Gestionar listas (añadir, eliminar, ver elementos)
-   Ejemplos:
-   - "Añade leche a la lista de la compra"
-   - "Añade mantequilla a la lista de la compra"
-   - "Quita huevos de la lista"
-   - "¿Qué hay en mi lista de la compra?"
-   - "Muéstrame la lista"
-   - "¿Qué hay en la lista?"
+### 2. **note** - Guardar INFORMACIÓN o hechos (sin acción futura)
+**Pregunta clave:** ¿Es información para recordar, sin necesidad de hacer algo?
+- Guardar datos, preferencias, hechos
+- Memorias de eventos pasados
+- Información sobre personas o cosas
+- NO implica acción futura del usuario
 
-4. **query** - Buscar información general guardada, preguntas sobre el pasado
-   Ejemplos:
-   - "¿Qué hice ayer?"
-   - "¿Cuándo es mi cita con el dentista?"
-   - "Cuéntame sobre mi reunión con Sara"
-   - "¿Qué guardé sobre María?"
-   - "¿Qué sé de Juan?"
+Ejemplos:
+- "Recuerda que a Juan le gusta el café" → preferencia, no acción
+- "Hemos ido a la playa" → memoria de evento
+- "El cumpleaños de Sara es en junio" → dato
+- "La contraseña es abc123" → información
+- "A María le gustan las flores" → preferencia
 
-5. **unknown** - No se puede determinar o no está claro
+### 3. **list** - Gestionar COLECCIONES de elementos
+**Pregunta clave:** ¿Está agregando/quitando/consultando elementos de una lista?
+- Añadir o quitar elementos de listas
+- Ver contenido de listas específicas
+- Limpiar o gestionar listas
 
-REGLAS CRÍTICAS:
-- "¿Qué hay en la lista?" o "¿Qué hay en mi lista de X?" → "list"
-- "¿Cuáles son mis tareas?" o "Muestra tareas" → "task"
-- "¿Qué guardé sobre X?" o "¿Qué sé de X?" → "query"
-- Si el mensaje contiene "recuerda", "nota", "guarda" → "note"
-- Si el mensaje dice "recuérdame", "tarea", "tengo que" → "task"
-- Si el mensaje dice "añade", "agrega" con "lista" → "list"
-- Devuelve confianza 0.0-1.0 (1.0 = muy seguro)
-- Si es ambiguo, devuelve "unknown" con baja confianza
+Ejemplos:
+- "Añade leche a la compra" → agregar a lista
+- "Pon mantequilla en la lista" → agregar a lista
+- "Quita huevos" → remover de lista
+- "¿Qué hay en mi lista de compras?" → consulta de lista
+- "Borra toda la lista" → gestión de lista
+
+### 4. **query** - Buscar o recuperar INFORMACIÓN guardada
+**Pregunta clave:** ¿Está preguntando por información que guardó antes?
+- Búsquedas de información pasada
+- Preguntas sobre eventos, personas, o datos guardados
+- Recuperación de contexto histórico
+
+Ejemplos:
+- "¿Qué hice ayer?" → buscar eventos pasados
+- "¿Qué sé de Juan?" → recuperar información
+- "Cuéntame sobre mi reunión" → buscar contexto
+- "¿Cuándo fue mi cita?" → buscar dato temporal
+
+### 5. **unknown** - No está claro o es ambiguo
+
+## Proceso de clasificación:
+
+1. **Ignora palabras específicas** - No te bases solo en "recuerda", "añade", etc.
+2. **Analiza el PROPÓSITO semántico**:
+   - ¿Qué QUIERE el usuario?
+   - ¿Es una acción futura? → task
+   - ¿Es guardar información? → note
+   - ¿Es gestionar una lista? → list
+   - ¿Es buscar algo guardado? → query
+
+3. **Considera el CONTEXTO temporal**:
+   - Futuro/pendiente → probablemente task
+   - Pasado/presente sin acción → probablemente note o query
+   - Lista de elementos → probablemente list
+
+4. **Sé decisivo pero honesto**:
+   - Alta confianza (0.8-1.0): Intención clara
+   - Confianza media (0.5-0.8): Probable pero con ambigüedad
+   - Baja confianza (0.0-0.5): Usa "unknown"
 
 Devuelve JSON:
 {{
     "intent": "note|task|list|query|unknown",
     "confidence": 0.0-1.0,
-    "reasoning": "explicación breve"
+    "reasoning": "explicación del razonamiento semántico"
 }}"""
     
     def _get_system_prompt(self) -> str:
         """System prompt for classifier."""
-        return """Eres un clasificador de intenciones. Tu ÚNICO trabajo es categorizar mensajes de usuarios.
+        return """Eres un clasificador de intenciones SEMÁNTICO. Analiza el PROPÓSITO del mensaje, no solo palabras clave.
+
+PIENSA como un humano entendería la intención:
+- ¿Qué QUIERE hacer el usuario?
+- ¿Cuál es el OBJETIVO del mensaje?
+- ¿Hay una ACCIÓN FUTURA implícita o explícita?
+
+NO te bases en palabras específicas como "recuerda", "añade", etc.
+En su lugar, analiza el SIGNIFICADO completo del mensaje.
 
 Devuelve SOLO JSON válido, sin markdown, sin explicaciones.
 
-Sé decisivo pero honesto sobre la confianza:
-- Alta confianza (0.8-1.0): Intención clara, categoría obvia
-- Confianza media (0.5-0.8): Categoría probable pero con algo de ambigüedad
-- Baja confianza (0.0-0.5): No está claro, usa "unknown"
+Confianza basada en claridad de intención:
+- Alta (0.8-1.0): El propósito es obvio sin ambigüedad
+- Media (0.5-0.8): Probable pero podría interpretarse de otra forma
+- Baja (0.0-0.5): Ambiguo, usa "unknown"
 
-En caso de duda, usa "unknown" - se le pedirá al usuario que aclare."""
+Ejemplo de razonamiento correcto:
+- "Recuérdame llamar a Juan" → TASK (acción futura: llamar)
+- "Recuerda que a Juan le gusta café" → NOTE (información, sin acción)
+- "Hemos ido a la playa" → NOTE (memoria pasada, sin acción futura)
+- "Tengo que comprar leche" → TASK (obligación/acción pendiente)
+- "Pon leche en la lista" → LIST (gestión de colección)"""

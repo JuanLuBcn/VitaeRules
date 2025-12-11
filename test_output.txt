@@ -1,0 +1,44 @@
+﻿
+============================================================
+CHAT FALLBACK TEST
+============================================================
+2025-10-29 12:06:23 | INFO     | vitaerules | LLM initialized
+2025-10-29 12:06:24 | INFO     | vitaerules | Memory service initialized
+python : Traceback (most recent call last):
+At line:1 char:24
++ ... env:PYTHONPATH="src"; python tests/test_chat_fallback.py 2>&1 | Out-F ...
++                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::S 
+   tring) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\coses\Documents\GitRepos\VitaeRules\tests\test_chat_fallback.py",
+ line 110, in <module>
+    asyncio.run(test_chat_fallback())
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.280
+0.0_x64__qbz5n2kfra8p0\Lib\asyncio\runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.280
+0.0_x64__qbz5n2kfra8p0\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.280
+0.0_x64__qbz5n2kfra8p0\Lib\asyncio\base_events.py", line 691, in run_until_complet
+e
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\coses\Documents\GitRepos\VitaeRules\tests\test_chat_fallback.py",
+ line 58, in test_chat_fallback
+    print(f"\n{'\u2500'*60}")
+  File "C:\Users\coses\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12
+_qbz5n2kfra8p0\LocalCache\local-packages\Python312\site-packages\crewai\llm.py", l
+ine 105, in write
+    return self._original_stream.write(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.280
+0.0_x64__qbz5n2kfra8p0\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 2-61: char
+acter maps to <undefined>

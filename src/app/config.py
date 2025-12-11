@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
     ollama_model: str = Field(default="qwen3:1.7b", alias="OLLAMA_MODEL")
     openrouter_api_key: str | None = Field(default=None, alias="OPENROUTER_API_KEY")
+    openrouter_base_url: str = Field(default="https://openrouter.ai/api/v1", alias="OPENROUTER_BASE_URL")
     openrouter_model: str = Field(default="anthropic/claude-3.5-sonnet", alias="OPENROUTER_MODEL")
 
     # Memory & Storage
@@ -53,6 +54,18 @@ class Settings(BaseSettings):
     # Retrieval Settings
     retrieval_top_k: int = Field(default=4, alias="RETRIEVAL_TOP_K")
     enable_hybrid_search: bool = Field(default=True, alias="ENABLE_HYBRID_SEARCH")
+
+    # CrewAI Memory Settings
+    crewai_memory_provider: Literal["chroma", "faiss", "sqlite"] = Field(
+        default="chroma", alias="CREWAI_MEMORY_PROVIDER"
+    )
+    crewai_memory_embedding_model: str = Field(
+        default="all-MiniLM-L6-v2", alias="CREWAI_MEMORY_EMBEDDING_MODEL"
+    )
+    crewai_enable_memory: bool = Field(default=True, alias="CREWAI_ENABLE_MEMORY")
+    crewai_memory_ttl_seconds: int = Field(
+        default=3600, alias="CREWAI_MEMORY_TTL_SECONDS"
+    )  # 1 hour default
 
     # STT (Speech-to-Text)
     stt_model: str = Field(default="base", alias="STT_MODEL")

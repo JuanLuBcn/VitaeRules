@@ -16,11 +16,12 @@ from app.tracing import get_tracer
 logger = get_tracer()
 
 
-def create_tool_caller_agent(llm=None) -> Agent:
+def create_tool_caller_agent(llm=None, tools=None) -> Agent:
     """Create the Tool Caller Agent.
 
     Args:
         llm: Optional LLM configuration. If None, uses CrewAI defaults.
+        tools: Optional list of CrewAI tools to provide to the agent.
 
     Returns:
         CrewAI Agent configured for tool execution.
@@ -44,6 +45,10 @@ def create_tool_caller_agent(llm=None) -> Agent:
 
     if llm:
         agent_config["llm"] = llm
+    
+    if tools:
+        agent_config["tools"] = tools
+        logger.info(f"Tool Caller Agent configured with {len(tools)} tools")
 
     return Agent(**agent_config)
 

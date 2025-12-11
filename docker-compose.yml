@@ -1,0 +1,50 @@
+services:
+  vitaerules:
+    build: .
+    container_name: vitaerules
+    restart: unless-stopped
+    volumes:
+      - vitae_data:/app/data
+      # Removed bind mount for .env to avoid path issues in Docker-in-Docker
+      # The .env file is now copied into the image during build
+    environment:
+      - APP_ENV=production
+      # If Ollama is running on the host machine (outside Docker), use this URL:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    # Allow the container to reach the host machine via 'host.docker.internal'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Network mode host is often useful for Home Assistant integration / local discovery
+    # network_mode: host 
+    networks:
+      - vitaenet
+    # depends_on:
+    #   - ollama
+
+  # Uncomment this service if you want to run a dedicated Ollama instance inside Docker
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: ollama
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   ports:
+  #     - "11434:11434"
+  #   networks:
+  #     - vitaenet
+    # Enable GPU support if available/configured on the Pi (optional)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+networks:
+  vitaenet:
+    driver: bridge
+
+volumes:
+  ollama_data:
+  vitae_data:

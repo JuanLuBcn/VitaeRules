@@ -1,5 +1,6 @@
 """ListTool for managing lists and items."""
 
+import json
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -63,6 +64,15 @@ class ListTool(BaseTool):
                     position INTEGER NOT NULL,
                     created_at TEXT NOT NULL,
                     completed_at TEXT,
+                    people TEXT,
+                    location TEXT,
+                    latitude REAL,
+                    longitude REAL,
+                    place_id TEXT,
+                    tags TEXT,
+                    notes TEXT,
+                    media_path TEXT,
+                    metadata TEXT,
                     FOREIGN KEY (list_id) REFERENCES lists(id) ON DELETE CASCADE
                 )
             """)
@@ -71,6 +81,12 @@ class ListTool(BaseTool):
             )
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_item_list ON list_items(list_id, position)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_item_location ON list_items(latitude, longitude)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_item_place ON list_items(place_id)"
             )
             conn.commit()
 
@@ -121,6 +137,40 @@ class ListTool(BaseTool):
                 "item_id": {
                     "type": "string",
                     "description": "ID of the item (for remove_item, complete_item)",
+                },
+                "people": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "People associated with this item (for add_item)",
+                },
+                "location": {
+                    "type": "string",
+                    "description": "Human-readable location (for add_item)",
+                },
+                "latitude": {
+                    "type": "number",
+                    "description": "GPS latitude (for add_item)",
+                },
+                "longitude": {
+                    "type": "number",
+                    "description": "GPS longitude (for add_item)",
+                },
+                "place_id": {
+                    "type": "string",
+                    "description": "Google Place ID (for add_item)",
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Tags for categorization (for add_item)",
+                },
+                "notes": {
+                    "type": "string",
+                    "description": "Additional notes (for add_item)",
+                },
+                "media_path": {
+                    "type": "string",
+                    "description": "Path to media file (for add_item)",
                 },
                 "user_id": {
                     "type": "string",
@@ -227,6 +277,22 @@ class ListTool(BaseTool):
         if not item_text:
             raise ValueError("item_text is required for add_item")
 
+        # Extract enhanced fields
+        people = args.get("people", [])
+        location = args.get("location")
+        latitude = args.get("latitude")
+        longitude = args.get("longitude")
+        place_id = args.get("place_id")
+        tags = args.get("tags", [])
+        notes = args.get("notes")
+        media_path = args.get("media_path")
+        metadata = args.get("metadata", {})
+
+        # Serialize JSON fields
+        people_json = json.dumps(people) if people else None
+        tags_json = json.dumps(tags) if tags else None
+        metadata_json = json.dumps(metadata) if metadata else None
+
         with sqlite3.connect(self.db_path) as conn:
             # Get next position
             cursor = conn.execute(
@@ -240,10 +306,18 @@ class ListTool(BaseTool):
 
             conn.execute(
                 """
-                INSERT INTO list_items (id, list_id, text, position, created_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO list_items (
+                    id, list_id, text, position, created_at,
+                    people, location, latitude, longitude, place_id,
+                    tags, notes, media_path, metadata
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-                (item_id, list_id, item_text, position, now),
+                (
+                    item_id, list_id, item_text, position, now,
+                    people_json, location, latitude, longitude, place_id,
+                    tags_json, notes, media_path, metadata_json
+                ),
             )
 
             # Update list timestamp
@@ -259,6 +333,13 @@ class ListTool(BaseTool):
             "item_text": item_text,
             "list_id": list_id,
             "position": position,
+            "people": people,
+            "location": location,
+            "coordinates": (latitude, longitude) if latitude and longitude else None,
+            "place_id": place_id,
+            "tags": tags,
+            "notes": notes,
+            "media_path": media_path,
         }
 
     async def _remove_item(self, args: dict[str, Any]) -> dict[str, Any]:
@@ -340,14 +421,50 @@ class ListTool(BaseTool):
             conn.row_factory = sqlite3.Row
             cursor = conn.execute(
                 """
-                SELECT id, text, completed, position, created_at, completed_at
+                SELECT id, text, completed, position, created_at, completed_at,
+                       people, location, latitude, longitude, place_id,
+                       tags, notes, media_path, metadata
                 FROM list_items
                 WHERE list_id = ?
                 ORDER BY position
             """,
                 (list_id,),
             )
-            items = [dict(row) for row in cursor.fetchall()]
+            
+            items = []
+            for row in cursor.fetchall():
+                item = dict(row)
+                
+                # Deserialize JSON fields
+                if item.get("people"):
+                    try:
+                        item["people"] = json.loads(item["people"])
+                    except (json.JSONDecodeError, TypeError):
+                        item["people"] = []
+                else:
+                    item["people"] = []
+                
+                if item.get("tags"):
+                    try:
+                        item["tags"] = json.loads(item["tags"])
+                    except (json.JSONDecodeError, TypeError):
+                        item["tags"] = []
+                else:
+                    item["tags"] = []
+                
+                if item.get("metadata"):
+                    try:
+                        item["metadata"] = json.loads(item["metadata"])
+                    except (json.JSONDecodeError, TypeError):
+                        item["metadata"] = {}
+                else:
+                    item["metadata"] = {}
+                
+                # Add coordinates tuple if both lat/lon present
+                if item.get("latitude") and item.get("longitude"):
+                    item["coordinates"] = (item["latitude"], item["longitude"])
+                
+                items.append(item)
 
         return {
             "list_id": list_id,
@@ -419,3 +536,109 @@ class ListTool(BaseTool):
             if not row:
                 raise ValueError(f"List not found: {list_name}")
             return row[0]
+    
+    def remove_items(
+        self, user_id: str, list_name: str, items: list[str]
+    ) -> dict[str, Any]:
+        """
+        Remove specific items from a list by text match.
+        
+        Args:
+            user_id: User identifier
+            list_name: Name of the list
+            items: List of item texts to remove
+        
+        Returns:
+            Dict with success status and removed count
+        """
+        try:
+            # Get list ID
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute(
+                    "SELECT id FROM lists WHERE LOWER(name) = ? AND user_id = ?",
+                    (list_name.strip().lower(), user_id)
+                )
+                row = cursor.fetchone()
+                if not row:
+                    return {"success": False, "error": f"List '{list_name}' not found"}
+                
+                list_id = row[0]
+                
+                # Remove items by text match (case-insensitive)
+                removed_count = 0
+                for item_text in items:
+                    result = conn.execute(
+                        "DELETE FROM list_items WHERE list_id = ? AND LOWER(text) = ?",
+                        (list_id, item_text.strip().lower())
+                    )
+                    removed_count += result.rowcount
+                
+                conn.commit()
+                
+                # Update list's updated_at
+                conn.execute(
+                    "UPDATE lists SET updated_at = ? WHERE id = ?",
+                    (datetime.now(UTC).isoformat(), list_id)
+                )
+                conn.commit()
+            
+            self.tracer.info(f"Removed {removed_count} items from list '{list_name}'")
+            return {
+                "success": True,
+                "removed_count": removed_count,
+                "list_name": list_name
+            }
+            
+        except Exception as e:
+            self.tracer.error(f"Failed to remove items: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def clear_list(self, user_id: str, list_name: str) -> dict[str, Any]:
+        """
+        Clear all items from a list.
+        
+        Args:
+            user_id: User identifier
+            list_name: Name of the list to clear
+        
+        Returns:
+            Dict with success status
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                # Get list ID
+                cursor = conn.execute(
+                    "SELECT id FROM lists WHERE LOWER(name) = ? AND user_id = ?",
+                    (list_name.strip().lower(), user_id)
+                )
+                row = cursor.fetchone()
+                if not row:
+                    return {"success": False, "error": f"List '{list_name}' not found"}
+                
+                list_id = row[0]
+                
+                # Delete all items
+                result = conn.execute(
+                    "DELETE FROM list_items WHERE list_id = ?",
+                    (list_id,)
+                )
+                removed_count = result.rowcount
+                conn.commit()
+                
+                # Update list's updated_at
+                conn.execute(
+                    "UPDATE lists SET updated_at = ? WHERE id = ?",
+                    (datetime.now(UTC).isoformat(), list_id)
+                )
+                conn.commit()
+            
+            self.tracer.info(f"Cleared {removed_count} items from list '{list_name}'")
+            return {
+                "success": True,
+                "removed_count": removed_count,
+                "list_name": list_name
+            }
+            
+        except Exception as e:
+            self.tracer.error(f"Failed to clear list: {e}")
+            return {"success": False, "error": str(e)}

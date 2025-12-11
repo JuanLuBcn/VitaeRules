@@ -4,12 +4,48 @@ The PlannerAgent analyzes user input and produces a structured Plan
 containing intent, entities, required tool actions, and any clarifications needed.
 """
 
+from crewai import Agent
+
 from app.contracts.plan import Plan
 from app.tools.registry import get_registry
 from app.tracing import get_tracer
 from app.llm import get_llm_service
 
 logger = get_tracer()
+
+
+def create_planner_agent(llm=None) -> Agent:
+    """Create the Planner Agent.
+
+    Args:
+        llm: Optional LLM configuration. If None, uses CrewAI defaults.
+
+    Returns:
+        CrewAI Agent configured for intent analysis and action planning.
+    """
+    agent_config = {
+        "role": "Action Planner",
+        "goal": (
+            "Analyze user input to identify intent, extract entities, "
+            "determine required tool actions, and identify missing information"
+        ),
+        "backstory": (
+            "You are an expert at understanding user requests and converting them into "
+            "structured action plans. You classify intents precisely (task.create, "
+            "list.add, memory.note, etc.), extract people, places, dates, and tags. "
+            "You identify which tools need to be called and what parameters are required. "
+            "You detect when critical information is missing and need clarification. "
+            "You never block safe operations like creating notes, tasks, or reminders. "
+            "You are thorough but efficient, producing complete plans with high confidence."
+        ),
+        "verbose": True,
+        "allow_delegation": False,
+    }
+
+    if llm:
+        agent_config["llm"] = llm
+
+    return Agent(**agent_config)
 
 
 def _build_planning_prompt(user_input: str, chat_id: str, user_id: str) -> str:

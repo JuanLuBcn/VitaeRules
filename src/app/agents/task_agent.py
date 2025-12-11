@@ -3,6 +3,7 @@
 from datetime import datetime
 from typing import Any
 
+from app.agents.enrichment_types import AgentResponse
 from app.llm import LLMService
 from app.tools.task_tool import TaskTool
 from app.tracing import get_tracer
@@ -58,6 +59,9 @@ class TaskAgent(BaseAgent):
     ) -> AgentResult:
         """Handle task operation."""
         logger.info(f"TaskAgent handling: {message[:100]}")
+        
+        # Store context for use in operations
+        self._current_context = context
         
         # Determine operation type
         operation = self._detect_operation(message)
@@ -117,7 +121,11 @@ class TaskAgent(BaseAgent):
                     for task in pending[:5]:  # Show max 5
                         title = task.get("title", "Sin título")
                         due = task.get("due_at", "Sin fecha")
-                        response += f"⬜ {title}\n"
+                        
+                        # Add media indicator if present
+                        media_indicator = self._get_media_indicator(task)
+                        response += f"⬜ {title}{media_indicator}\n"
+                        
                         if due != "Sin fecha":
                             response += f"   📅 Fecha: {due}\n"
                     
@@ -139,85 +147,46 @@ class TaskAgent(BaseAgent):
     
     async def _handle_create(
         self, message: str, chat_id: str, user_id: str
-    ) -> AgentResult:
-        """Handle creating a task."""
+    ) -> AgentResponse:
+        """Handle creating a task (with enrichment support)."""
         # Extract task details using LLM
         task_data = self._extract_task_details(message)
         
         if not task_data.get("title"):
-            return AgentResult(
-                success=False,
+            return AgentResponse(
                 message="No pude entender la tarea. Prueba: 'Recuérdame llamar a Juan mañana'",
-                error="No task title found"
+                success=False,
+                needs_enrichment=False,
             )
         
-        # Create preview
+        # Create preview message
         title = task_data["title"]
-        due_date = task_data.get("due_at", "No especificada")
-        priority = task_data.get("priority", "media")
+        preview = f"✅ Perfecto, crearé la tarea: **{title}**"
         
-        preview = (
-            f"📋 **¿Crear esta tarea?**\n\n"
-            f"**Tarea:** {title}\n"
-            f"**Fecha:** {due_date}\n"
-            f"**Prioridad:** {priority}"
-        )
+        # Prepare extracted data
+        extracted_data = {
+            "operation": "create_task",
+            "title": title,
+            "description": task_data.get("description"),
+            "due_at": task_data.get("due_at"),
+            "priority": task_data.get("priority", 1),  # Default to medium
+            "user_id": user_id,
+            "chat_id": chat_id,
+        }
         
-        # Return with confirmation needed
-        return AgentResult(
-            success=True,
+        # Add media reference if present
+        if hasattr(self, '_current_context') and self._current_context:
+            if "media_reference" in self._current_context:
+                extracted_data["media_reference"] = self._current_context["media_reference"]
+        
+        # Return with enrichment support
+        return AgentResponse(
             message=preview,
-            needs_confirmation=True,
-            preview=preview,
-            data={
-                "operation": "create",
-                "task_data": task_data,
-                "chat_id": chat_id,
-                "user_id": user_id,
-            }
+            success=True,
+            needs_enrichment=True,  # Enable enrichment
+            extracted_data=extracted_data,
+            operation="create_task",
         )
-    
-    async def execute_confirmed(self, data: dict[str, Any]) -> AgentResult:
-        """Execute confirmed task operation."""
-        operation = data.get("operation")
-        
-        if operation == "create":
-            return await self._execute_create(data)
-        else:
-            return AgentResult(
-                success=False,
-                message="Unknown operation",
-                error=f"Unsupported operation: {operation}"
-            )
-    
-    async def _execute_create(self, data: dict[str, Any]) -> AgentResult:
-        """Execute task creation."""
-        task_data = data["task_data"]
-        chat_id = data["chat_id"]
-        user_id = data["user_id"]
-        
-        try:
-            result = await self.task_tool.execute({
-                "operation": "create_task",
-                "title": task_data["title"],
-                "due_at": task_data.get("due_at"),
-                "priority": task_data.get("priority", 2),  # medium = 2
-                "user_id": user_id,
-                "chat_id": chat_id,
-            })
-            
-            title = task_data["title"]
-            response = f"✅ Tarea creada: **{title}**"
-            
-            return AgentResult(success=True, message=response)
-            
-        except Exception as e:
-            logger.error(f"Failed to create task: {e}")
-            return AgentResult(
-                success=False,
-                message=f"No pude crear la tarea. {str(e)}",
-                error=str(e)
-            )
     
     async def _handle_complete(
         self, message: str, chat_id: str, user_id: str
@@ -229,6 +198,36 @@ class TaskAgent(BaseAgent):
             message="Completar tareas aún no está implementado. ¡Próximamente!",
             error="Not implemented"
         )
+    
+    def _get_media_indicator(self, task: dict[str, Any]) -> str:
+        """Get media indicator emoji for a task."""
+        media_path = task.get("media_path")
+        if not media_path:
+            return ""
+        
+        # Determine media type from metadata or path
+        metadata = task.get("metadata", {})
+        media_info = metadata.get("media", {})
+        media_type = media_info.get("media_type")
+        
+        # Fallback: detect from file extension
+        if not media_type and media_path:
+            if "photos" in media_path or media_path.endswith((".jpg", ".jpeg", ".png")):
+                media_type = "photo"
+            elif "voice" in media_path or media_path.endswith((".ogg", ".mp3", ".wav")):
+                media_type = "voice"
+            elif "documents" in media_path:
+                media_type = "document"
+        
+        # Return appropriate emoji
+        if media_type == "photo":
+            return " 📷"
+        elif media_type == "voice":
+            return " 🎤"
+        elif media_type == "document":
+            return " 📄"
+        else:
+            return " 📎"  # Generic attachment
     
     def _extract_task_details(self, message: str) -> dict[str, Any]:
         """Extract task details from message using LLM."""

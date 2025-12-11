@@ -11,6 +11,7 @@ from app.crews.capture.crew import (
     CaptureResult,
 )
 from app.crews.capture.planner import (
+    create_planner_agent,
     plan_from_input,
 )
 from app.crews.capture.tool_caller import (
@@ -26,6 +27,7 @@ __all__ = [
     "CaptureResult",
     "ask_clarifications",
     "create_clarifier_agent",
+    "create_planner_agent",
     "plan_from_input",
     "create_tool_caller_agent",
     "execute_plan_actions",

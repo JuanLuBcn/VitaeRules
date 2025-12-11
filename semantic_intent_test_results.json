@@ -1,0 +1,152 @@
+{
+  "model": "minimax-m2:cloud",
+  "prompt_style": "semantic_only_no_examples",
+  "accuracy": 94.44444444444444,
+  "avg_time": 8.694758534431458,
+  "predictions": [
+    {
+      "message": "Cuéntame sobre mi lista de compras",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 12.639382362365723,
+      "reasoning": "Primary Intent: SEARCH\nReasoning: The user is requesting information about their shopping list using the phrase \"Cuéntame sobre\" (Tell me about), which indicates they want me to retrieve and share existing stored information rather than provide new information or execute an action."
+    },
+    {
+      "message": "Me gustaría saber qué hice el martes pasado",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 7.825986623764038,
+      "reasoning": "Primary Intent: SEARCH\n\nReasoning: The user is asking for information they don't currently have (\"Me gustaría saber qué hice el martes pasado\" - \"I would like to know what I did last Tuesday\"). The phrase \"Me gustaría saber\" (I would like to know) explicitly indicates they are seeking to retrieve or query existing information about their past activities. This is a clear request for information retrieval about past events, which falls under the SEARCH intent category."
+    },
+    {
+      "message": "Necesito información sobre mis tareas pendientes",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 4.9165873527526855,
+      "reasoning": "**Primary Intent:** SEARCH\n\n**Reasoning:** The user's message \"Necesito información sobre mis tareas pendientes\" translates to \"I need information about my pending tasks.\" This is a clear request to retrieve existing information from stored data (their task list). The user is asking for information they don't currently have access to, seeking to query their pending tasks rather than providing new information or giving commands. This semantic meaning aligns with the SEARCH category where the user fundamentally wants to accomplish retrieving information from memory/stored data."
+    },
+    {
+      "message": "Dime el nombre de mi gato",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 22.933011531829834,
+      "reasoning": "Primary Intent: SEARCH\nReasoning: The user message \"Dime el nombre de mi gato\" (Tell me the name of my cat) is a direct question asking for specific information. The semantic meaning indicates the user wants to retrieve information they don't currently have - in this case, the name of their cat. The message is phrased as a request for factual information, making it clearly fall under the SEARCH category rather than ACTION. The user is seeking an answer rather than providing or communicating information."
+    },
+    {
+      "message": "¿Qué hay en mi lista?",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 7.589773416519165,
+      "reasoning": "Thought: I now can give a great answer\n\nPrimary Intent: SEARCH\nReasoning: The user is asking \"¿Qué hay en mi lista?\" (What is on my list?), which is a direct question seeking information about content stored in their list. This is a request to retrieve existing information they don't currently have access to, making it a clear SEARCH intent rather than an action to store, create, or communicate information."
+    },
+    {
+      "message": "¿Cuándo es mi cita?",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 4.5585713386535645,
+      "reasoning": "Primary Intent: SEARCH\n\nReasoning: The user is asking \"¿Cuándo es mi cita?\" (When is my appointment?), which is a direct question seeking specific information they don't currently have. This is a clear request for information retrieval about a scheduled appointment date/time, falling under the SEARCH category as they want to query existing scheduling data rather than provide or communicate information."
+    },
+    {
+      "message": "Hoy vi a Jorge en el parque",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 7.283956050872803,
+      "reasoning": "Primary Intent: ACTION\nReasoning: The user is sharing an experience by stating \"Hoy vi a Jorge en el parque\" (Today I saw Jorge in the park). This is not requesting information or asking a question, but rather communicating an observation or event from their day. The user is expressing themselves by telling me about seeing someone named Jorge in the park, which falls under providing new information or engaging in social communication rather than seeking to retrieve existing information."
+    },
+    {
+      "message": "Estuve en la oficina con Biel",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 7.75981068611145,
+      "reasoning": "Primary Intent: ACTION\n\nReasoning: The user is providing new information by stating \"Estuve en la oficina con Biel\" (I was at the office with Biel). They are sharing a factual statement about their whereabouts and company rather than requesting information. This message is descriptive communication where the user is informing others about their day/activities, which falls under the ACTION category of storing, creating, or communicating information rather than retrieving it. The message is not asking questions or seeking data, but rather expressing/communicating their experience."
+    },
+    {
+      "message": "Mi gata se llama Luna y tiene 3 años",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 7.460477352142334,
+      "reasoning": "Primary Intent: ACTION\nReasoning: The user is providing new information about their cat, stating facts (name: Luna, age: 3 years). This is a communication of personal information rather than a request for information retrieval. The message serves to introduce or describe their pet, which falls under the ACTION category of sharing information and social interaction."
+    },
+    {
+      "message": "Pon tomates en la lista",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 9.482422113418579,
+      "reasoning": "Primary Intent: ACTION\n\nReasoning: The user is giving a direct command/instruction to \"put tomatoes on the list.\" This is not asking for information they don't have, but rather is requesting the storage or modification of data by adding an item to a list. The semantic meaning shows the user wants to communicate an action they want performed (adding tomatoes to a list) rather than seeking information retrieval."
+    },
+    {
+      "message": "Necesito recordar llamar al doctor",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 9.787566900253296,
+      "reasoning": "Primary Intent: ACTION\nReasoning: The user is expressing a personal need to remember to call the doctor. This is not a question seeking information they don't have, but rather a communication of what they want to accomplish or remember. The message \"Necesito recordar llamar al doctor\" expresses a personal reminder or task, which falls under the ACTION category as it's about storing/recording information or communicating a personal need rather than retrieving existing information."
+    },
+    {
+      "message": "Hola!",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 8.834454774856567,
+      "reasoning": "Looking at the user message \"Hola!\", I need to analyze the semantic meaning to determine the primary intent.\n\nThe message \"Hola!\" is a Spanish greeting meaning \"Hello!\" This is a social interaction where the user is initiating contact and expressing themselves through a standard greeting. The user is not asking any questions, requesting information, or seeking to retrieve data. They're simply greeting me, which is a form of social communication.\n\nAccording to the classification criteria:\n- SEARCH involves requesting information, asking questions, or seeking data retrieval\n- ACTION involves social interaction, expressing oneself, or communicating (and should be the default when uncertain)\n\n\"Hola!\" clearly falls under social interaction/communication, making this an ACTION intent.\n\nPrimary Intent: ACTION\nReasoning: The message \"Hola!\" is a greeting that represents social interaction and communication rather than an information request or query. The user is expressing themselves through a standard greeting to establish contact, which aligns with the ACTION category of engaging in social interaction."
+    },
+    {
+      "message": "Gracias por tu ayuda",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 7.286189317703247,
+      "reasoning": "Primary Intent: ACTION\n\nReasoning: The message \"Gracias por tu ayuda\" (Thank you for your help) is expressing gratitude and acknowledgment. This is not a question seeking information retrieval, but rather a form of social interaction where the user is communicating appreciation for assistance received. The semantic meaning clearly indicates the user is engaging in communication to express themselves, not requesting data or asking for answers."
+    },
+    {
+      "message": "Me siento cansado hoy",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 4.1418962478637695,
+      "reasoning": "Primary Intent: ACTION\n\nReasoning: The user is expressing their current emotional/physical state by stating \"Me siento cansado hoy\" (I feel tired today). This is a self-expression and social communication where the user is sharing how they feel, rather than requesting information or asking a question. The message is descriptive and expressive in nature, categorizing it as an action-oriented intent focused on communication rather than information retrieval."
+    },
+    {
+      "message": "¿Me puedes ayudar?",
+      "expected": "SEARCH",
+      "predicted": "ACTION",
+      "correct": false,
+      "time": 8.792686223983765,
+      "reasoning": "Primary Intent: ACTION\n\nReasoning: The message \"¿Me puedes ayudar?\" (Can you help me?) is asking about the assistant's capabilities rather than requesting specific information to be retrieved. This is an inquiry about what the user can expect from the interaction, which falls under social interaction and communication. The user isn't seeking factual information or data retrieval, but rather establishing whether assistance can be provided. While phrased as a question, this is fundamentally about the nature of the interaction rather than information seeking, making it an ACTION intent."
+    },
+    {
+      "message": "Ayúdame con esto",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 9.443410634994507,
+      "reasoning": "Thought: I need to analyze the Spanish message \"Ayúdame con esto\" which translates to \"Help me with this.\" This is a request for assistance, but it's quite ambiguous since there's no context about what \"this\" refers to. Given that the user is asking for help rather than seeking specific information retrieval, and considering the instruction to default to ACTION when intent is ambiguous, I can determine the classification.\n</think>\n\nPrimary Intent: ACTION\n\nReasoning: The user is asking for help with something (\"Ayúdame con esto\"), which is a request for assistance rather than seeking specific information retrieval. While it could be interpreted as wanting information, the message is fundamentally a command or instruction asking me to help with some task or matter. Since the intent is ambiguous and the message doesn't explicitly request information from stored data or knowledge, I default to ACTION as specified in the guidelines."
+    },
+    {
+      "message": "Ayer compré manzanas",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 7.6331586837768555,
+      "reasoning": "Primary Intent: ACTION\nReasoning: The user is sharing information about a past event (buying apples yesterday) rather than requesting information. This is communication/expression of what they did, falling under the ACTION category of providing new information rather than seeking data retrieval."
+    },
+    {
+      "message": "¿Compré manzanas ayer?",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 8.136312007904053,
+      "reasoning": "Primary Intent: SEARCH\nReasoning: The user is asking \"¿Compré manzanas ayer?\" (Did I buy apples yesterday?), which is a direct question seeking information about a past event. The user wants to retrieve information they don't currently have about whether they performed a specific action (buying apples) at a previous time (yesterday). This is a clear information retrieval request rather than an action to store, modify, or communicate information. The semantic meaning indicates the user is querying existing data/information rather than providing it."
+    }
+  ]
+}

@@ -1,0 +1,492 @@
+[
+  {
+    "model": "gemma2:2b",
+    "correct": 0,
+    "total": 18,
+    "times": [],
+    "predictions": [],
+    "errors": [
+      {
+        "message": "What is in my shopping list?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "What did I do last Tuesday?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "What is my cat's name?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "When is my doctor appointment?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Do I have any tasks for today?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Who built the Sagrada Familia?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Dónde dejé las llaves?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Qué tengo que hacer mañana?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Add tomatoes to shopping list",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Hoy fuimos a la oficina con Biel",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Her name is Luna, she's 3 years old",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Hello",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Thanks!",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Create a task to call the doctor",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "I'm feeling tired today",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Añade leche a la lista de la compra",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Recuérdame que mañana tengo dentista",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      },
+      {
+        "message": "Hoy he visto a María en el parque",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'gemma2:2b' not found\"}"
+      }
+    ],
+    "accuracy": 0.0,
+    "avg_time": 0,
+    "min_time": 0,
+    "max_time": 0,
+    "balance_score": 0.0
+  },
+  {
+    "model": "qwen2.5:1.5b",
+    "correct": 0,
+    "total": 18,
+    "times": [],
+    "predictions": [],
+    "errors": [
+      {
+        "message": "What is in my shopping list?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "What did I do last Tuesday?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "What is my cat's name?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "When is my doctor appointment?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Do I have any tasks for today?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Who built the Sagrada Familia?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Dónde dejé las llaves?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Qué tengo que hacer mañana?",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Add tomatoes to shopping list",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Hoy fuimos a la oficina con Biel",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Her name is Luna, she's 3 years old",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Hello",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Thanks!",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Create a task to call the doctor",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "I'm feeling tired today",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Añade leche a la lista de la compra",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Recuérdame que mañana tengo dentista",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      },
+      {
+        "message": "Hoy he visto a María en el parque",
+        "error": "litellm.APIConnectionError: OllamaException - {\"error\":\"model 'qwen2.5:1.5b' not found\"}"
+      }
+    ],
+    "accuracy": 0.0,
+    "avg_time": 0,
+    "min_time": 0,
+    "max_time": 0,
+    "balance_score": 0.0
+  },
+  {
+    "model": "llama3.2:3b",
+    "correct": 16,
+    "total": 18,
+    "times": [
+      185.61522245407104,
+      120.6327714920044,
+      92.83474588394165,
+      101.24725246429443,
+      97.14655590057373,
+      96.01432514190674,
+      100.41707253456116,
+      91.61394166946411,
+      109.84651112556458,
+      99.87858176231384,
+      134.13232135772705,
+      97.39123034477234,
+      109.722975730896,
+      109.94879651069641,
+      117.7332239151001,
+      111.39454126358032,
+      93.74299120903015,
+      104.6744487285614
+    ],
+    "predictions": [
+      {
+        "message": "What is in my shopping list?",
+        "expected": "SEARCH",
+        "predicted": "SEARCH",
+        "correct": true,
+        "time": 185.61522245407104
+      },
+      {
+        "message": "What did I do last Tuesday?",
+        "expected": "SEARCH",
+        "predicted": "SEARCH",
+        "correct": true,
+        "time": 120.6327714920044
+      },
+      {
+        "message": "What is my cat's name?",
+        "expected": "SEARCH",
+        "predicted": "SEARCH",
+        "correct": true,
+        "time": 92.83474588394165
+      },
+      {
+        "message": "When is my doctor appointment?",
+        "expected": "SEARCH",
+        "predicted": "SEARCH",
+        "correct": true,
+        "time": 101.24725246429443
+      },
+      {
+        "message": "Do I have any tasks for today?",
+        "expected": "SEARCH",
+        "predicted": "SEARCH",
+        "correct": true,
+        "time": 97.14655590057373
+      },
+      {
+        "message": "Who built the Sagrada Familia?",
+        "expected": "SEARCH",
+        "predicted": "SEARCH",
+        "correct": true,
+        "time": 96.01432514190674
+      },
+      {
+        "message": "Dónde dejé las llaves?",
+        "expected": "SEARCH",
+        "predicted": "ACTION",
+        "correct": false,
+        "time": 100.41707253456116
+      },
+      {
+        "message": "Qué tengo que hacer mañana?",
+        "expected": "SEARCH",
+        "predicted": "ACTION",
+        "correct": false,
+        "time": 91.61394166946411
+      },
+      {
+        "message": "Add tomatoes to shopping list",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 109.84651112556458
+      },
+      {
+        "message": "Hoy fuimos a la oficina con Biel",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 99.87858176231384
+      },
+      {
+        "message": "Her name is Luna, she's 3 years old",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 134.13232135772705
+      },
+      {
+        "message": "Hello",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 97.39123034477234
+      },
+      {
+        "message": "Thanks!",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 109.722975730896
+      },
+      {
+        "message": "Create a task to call the doctor",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 109.94879651069641
+      },
+      {
+        "message": "I'm feeling tired today",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 117.7332239151001
+      },
+      {
+        "message": "Añade leche a la lista de la compra",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 111.39454126358032
+      },
+      {
+        "message": "Recuérdame que mañana tengo dentista",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 93.74299120903015
+      },
+      {
+        "message": "Hoy he visto a María en el parque",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 104.6744487285614
+      }
+    ],
+    "errors": [],
+    "accuracy": 88.88888888888889,
+    "avg_time": 109.6659727493922,
+    "min_time": 91.61394166946411,
+    "max_time": 185.61522245407104,
+    "balance_score": 0.8105421094655957
+  },
+  {
+    "model": "deepseek-r1:1.5b",
+    "correct": 15,
+    "total": 18,
+    "times": [
+      107.86478161811829,
+      87.48733425140381,
+      73.65365719795227,
+      85.50768280029297,
+      101.12070798873901,
+      94.04308843612671,
+      105.46863055229187,
+      72.20125699043274,
+      120.00398063659668,
+      109.86644101142883,
+      76.5632393360138,
+      101.08931112289429,
+      88.06792378425598,
+      73.06717109680176,
+      96.58894300460815,
+      89.64834022521973,
+      85.17664122581482,
+      79.0287446975708
+    ],
+    "predictions": [
+      {
+        "message": "What is in my shopping list?",
+        "expected": "SEARCH",
+        "predicted": "SEARCH",
+        "correct": true,
+        "time": 107.86478161811829
+      },
+      {
+        "message": "What did I do last Tuesday?",
+        "expected": "SEARCH",
+        "predicted": "SEARCH",
+        "correct": true,
+        "time": 87.48733425140381
+      },
+      {
+        "message": "What is my cat's name?",
+        "expected": "SEARCH",
+        "predicted": "SEARCH",
+        "correct": true,
+        "time": 73.65365719795227
+      },
+      {
+        "message": "When is my doctor appointment?",
+        "expected": "SEARCH",
+        "predicted": "SEARCH",
+        "correct": true,
+        "time": 85.50768280029297
+      },
+      {
+        "message": "Do I have any tasks for today?",
+        "expected": "SEARCH",
+        "predicted": "ACTION",
+        "correct": false,
+        "time": 101.12070798873901
+      },
+      {
+        "message": "Who built the Sagrada Familia?",
+        "expected": "SEARCH",
+        "predicted": "SEARCH",
+        "correct": true,
+        "time": 94.04308843612671
+      },
+      {
+        "message": "Dónde dejé las llaves?",
+        "expected": "SEARCH",
+        "predicted": "SEARCH",
+        "correct": true,
+        "time": 105.46863055229187
+      },
+      {
+        "message": "Qué tengo que hacer mañana?",
+        "expected": "SEARCH",
+        "predicted": "ACTION",
+        "correct": false,
+        "time": 72.20125699043274
+      },
+      {
+        "message": "Add tomatoes to shopping list",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 120.00398063659668
+      },
+      {
+        "message": "Hoy fuimos a la oficina con Biel",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 109.86644101142883
+      },
+      {
+        "message": "Her name is Luna, she's 3 years old",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 76.5632393360138
+      },
+      {
+        "message": "Hello",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 101.08931112289429
+      },
+      {
+        "message": "Thanks!",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 88.06792378425598
+      },
+      {
+        "message": "Create a task to call the doctor",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 73.06717109680176
+      },
+      {
+        "message": "I'm feeling tired today",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 96.58894300460815
+      },
+      {
+        "message": "Añade leche a la lista de la compra",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 89.64834022521973
+      },
+      {
+        "message": "Recuérdame que mañana tengo dentista",
+        "expected": "ACTION",
+        "predicted": "SEARCH",
+        "correct": false,
+        "time": 85.17664122581482
+      },
+      {
+        "message": "Hoy he visto a María en el parque",
+        "expected": "ACTION",
+        "predicted": "ACTION",
+        "correct": true,
+        "time": 79.0287446975708
+      }
+    ],
+    "errors": [],
+    "accuracy": 83.33333333333334,
+    "avg_time": 91.46932644314236,
+    "min_time": 72.20125699043274,
+    "max_time": 120.00398063659668,
+    "balance_score": 0.9110522245414545
+  }
+]

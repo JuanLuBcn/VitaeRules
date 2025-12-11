@@ -63,6 +63,11 @@ class NoteAgent(BaseAgent):
         # Extract note details
         note_data = self._extract_note_details(message)
         
+        # Add media reference if present
+        if context and "media_reference" in context:
+            media_ref = context["media_reference"]
+            note_data["media_reference"] = media_ref
+        
         if not note_data.get("content"):
             return AgentResult(
                 success=False,
@@ -82,6 +87,12 @@ class NoteAgent(BaseAgent):
             preview += f"\n**Personas:** {', '.join(people)}"
         if tags:
             preview += f"\n**Etiquetas:** {', '.join(tags)}"
+        
+        # Add media info to preview
+        if "media_reference" in note_data:
+            from app.utils import format_media_display
+            media_display = format_media_display(note_data["media_reference"])
+            preview += f"\n**Archivo adjunto:** {media_display}"
         
         # Return with confirmation needed
         return AgentResult(
@@ -105,18 +116,37 @@ class NoteAgent(BaseAgent):
         user_id = data["user_id"]
         
         try:
+            # Prepare memory item data
+            # Ensure title is never None - use content truncated as fallback
+            title = note_data.get("title")
+            if not title:  # Handle None or empty string
+                title = note_data["content"][:50]  # First 50 chars as title
+            
+            memory_data = {
+                "source": MemorySource.CAPTURE,
+                "section": MemorySection.NOTE,
+                "title": title,
+                "content": note_data["content"],
+                "people": note_data.get("people", []),
+                "tags": note_data.get("tags", []),
+                "chat_id": chat_id,
+                "user_id": user_id,
+                "metadata": {"agent": "note_agent"}
+            }
+            
+            # Add media fields if present
+            if "media_reference" in note_data:
+                media_ref = note_data["media_reference"]
+                memory_data["media_type"] = media_ref.media_type
+                if media_ref.media_path:
+                    memory_data["media_path"] = media_ref.media_path
+                if media_ref.latitude is not None and media_ref.longitude is not None:
+                    memory_data["coordinates"] = (media_ref.latitude, media_ref.longitude)
+                # Store media metadata
+                memory_data["metadata"]["media"] = media_ref.to_dict()
+            
             # Create memory item
-            memory_item = MemoryItem(
-                source=MemorySource.CAPTURE,
-                section=MemorySection.NOTE,
-                title=note_data.get("title", "Note"),
-                content=note_data["content"],
-                people=note_data.get("people", []),
-                tags=note_data.get("tags", []),
-                chat_id=chat_id,
-                user_id=user_id,
-                metadata={"agent": "note_agent"}
-            )
+            memory_item = MemoryItem(**memory_data)
             
             # Save to memory service
             self.memory.save_memory(memory_item)

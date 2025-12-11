@@ -4,21 +4,28 @@ The Capture Crew coordinates the PlannerAgent, ClarifierAgent, and ToolCallerAge
 to process user input, gather missing information, and execute tool actions.
 """
 
+import os
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from crewai import Crew, Process
+
+from app.config import get_settings
 from app.contracts.plan import Plan
 from app.contracts.tools import ToolResult
 from app.crews.capture.clarifier import (
     ask_clarifications,
+    create_clarifier_agent,
     update_plan_with_answers,
 )
-from app.crews.capture.planner import plan_from_input
+from app.crews.capture.planner import create_planner_agent, plan_from_input
 from app.crews.capture.tool_caller import (
+    create_tool_caller_agent,
     execute_plan_actions,
     format_results_summary,
 )
+from app.llm.crewai_llm import get_crewai_llm
 from app.memory.api import MemoryService
 from app.tracing import get_tracer
 
@@ -69,6 +76,81 @@ class CaptureCrew:
         """
         self.memory_service = memory_service or MemoryService()
         self.llm = llm
+        
+        # CrewAI components (lazy initialization)
+        self._agents_initialized = False
+        self.planner_agent = None
+        self.clarifier_agent = None
+        self.tool_caller_agent = None
+        self._crew = None
+    
+    def _initialize_agents(self):
+        """Lazy initialization of CrewAI agents with shared memory.
+        
+        This is called on first use to avoid initialization overhead
+        until actually needed.
+        """
+        if self._agents_initialized:
+            return
+        
+        logger.info("Initializing CrewAI agents for CaptureCrew")
+        
+        # Get CrewAI-compatible LLM
+        crewai_llm = get_crewai_llm(self.llm)
+        logger.info("CrewAI LLM obtained successfully")
+        
+        # Get tools from registry and wrap them for CrewAI
+        from app.tools.registry import get_registry
+        from app.crews.capture.tool_wrapper import wrap_tool_for_crewai
+        
+        registry = get_registry()
+        
+        # Get all available tools from the registry
+        tool_names = ["memory_note_tool", "task_tool", "list_tool", "temporal_tool"]
+        
+        crewai_tools = []
+        for tool_name in tool_names:
+            base_tool = registry.get(tool_name)
+            if base_tool:
+                crewai_tool = wrap_tool_for_crewai(base_tool)
+                crewai_tools.append(crewai_tool)
+                logger.info(f"Wrapped tool {tool_name} for CrewAI")
+            else:
+                logger.warning(f"Tool {tool_name} not found in registry")
+        
+        logger.info(f"Wrapped {len(crewai_tools)} tools for CrewAI agent")
+        
+        # Create agents with CrewAI LLM
+        self.planner_agent = create_planner_agent(crewai_llm)
+        self.clarifier_agent = create_clarifier_agent(crewai_llm)
+        self.tool_caller_agent = create_tool_caller_agent(crewai_llm, tools=crewai_tools)
+        logger.info("CrewAI agents created successfully")
+        
+        # Configure Ollama embeddings for CrewAI memory (use Ollama instead of OpenAI)
+        # CrewAI expects specific environment variable format
+        settings = get_settings()
+        os.environ["EMBEDDINGS_OLLAMA_MODEL_NAME"] = "nomic-embed-text"
+        os.environ["EMBEDDINGS_OLLAMA_BASE_URL"] = settings.ollama_base_url
+        
+        embedder_config = {
+            "provider": "ollama",
+            "config": {
+                "model": "nomic-embed-text"
+            }
+        }
+        
+        # Create CrewAI Crew with shared memory and custom embeddings
+        self._crew = Crew(
+            agents=[self.planner_agent, self.clarifier_agent, self.tool_caller_agent],
+            memory=settings.crewai_enable_memory,
+            embedder=embedder_config,
+            process=Process.sequential,
+            verbose=True,
+            full_output=True
+        )
+        
+        logger.info("CrewAI crew initialized successfully")
+        self._agents_initialized = True
 
     async def capture(
         self,
@@ -233,3 +315,21 @@ class CaptureCrew:
                 "capture.memory_error",
                 extra={"error": str(e), "chat_id": context.chat_id},
             )
+    
+    async def capture_with_crew_tasks(
+        self,
+        user_input: str,
+        context: CaptureContext,
+    ) -> CaptureResult:
+        """Process user input using Hybrid approach (Agent Planning + Code Execution).
+        
+        REPLACED: The pure CrewAI implementation was unreliable for tool execution.
+        Now uses:
+        1. plan_from_input (LLM/Agent) -> Structured Plan
+        2. execute_plan_actions (Python) -> Reliable Tool Execution
+        """
+        logger.info("Using Hybrid Capture Flow (Plan -> Code Execution)")
+        
+        # Redirect to the robust capture implementation that uses 
+        # plan_from_input() + execute_plan_actions()
+        return await self.capture(user_input, context)

@@ -1,0 +1,137 @@
+{
+  "model": "minimax-m2:cloud",
+  "init_time": 0.0,
+  "agent_time": 0.0020270347595214844,
+  "accuracy": 100.0,
+  "avg_time": 6.9200545946757,
+  "min_time": 4.424820423126221,
+  "max_time": 11.405529499053955,
+  "predictions": [
+    {
+      "message": "What is in my shopping list?",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 11.405529499053955
+    },
+    {
+      "message": "What did I do last Tuesday?",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 8.417332172393799
+    },
+    {
+      "message": "What is my cat's name?",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 4.424820423126221
+    },
+    {
+      "message": "When is my doctor appointment?",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 7.150170803070068
+    },
+    {
+      "message": "Do I have any tasks for today?",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 4.754471778869629
+    },
+    {
+      "message": "Who built the Sagrada Familia?",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 7.380131959915161
+    },
+    {
+      "message": "Dónde dejé las llaves?",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 7.206427574157715
+    },
+    {
+      "message": "Qué tengo que hacer mañana?",
+      "expected": "SEARCH",
+      "predicted": "SEARCH",
+      "correct": true,
+      "time": 4.875360488891602
+    },
+    {
+      "message": "Add tomatoes to shopping list",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 4.451036214828491
+    },
+    {
+      "message": "Hoy fuimos a la oficina con Biel",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 4.877472639083862
+    },
+    {
+      "message": "Her name is Luna, she's 3 years old",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 7.3789215087890625
+    },
+    {
+      "message": "Hello",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 4.5349791049957275
+    },
+    {
+      "message": "Thanks!",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 4.774891376495361
+    },
+    {
+      "message": "Create a task to call the doctor",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 10.533205509185791
+    },
+    {
+      "message": "I'm feeling tired today",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 7.587592363357544
+    },
+    {
+      "message": "Añade leche a la lista de la compra",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 7.811423063278198
+    },
+    {
+      "message": "Recuérdame que mañana tengo dentista",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 7.902497053146362
+    },
+    {
+      "message": "Hoy he visto a María en el parque",
+      "expected": "ACTION",
+      "predicted": "ACTION",
+      "correct": true,
+      "time": 9.094719171524048
+    }
+  ]
+}

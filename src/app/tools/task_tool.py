@@ -1,5 +1,6 @@
 """TaskTool for managing tasks."""
 
+import json
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -54,7 +55,16 @@ class TaskTool(BaseTool):
                     chat_id TEXT,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
-                    completed_at TEXT
+                    completed_at TEXT,
+                    people TEXT,
+                    location TEXT,
+                    latitude REAL,
+                    longitude REAL,
+                    place_id TEXT,
+                    tags TEXT,
+                    reminder_distance INTEGER,
+                    media_path TEXT,
+                    metadata TEXT
                 )
             """)
             conn.execute(
@@ -62,6 +72,12 @@ class TaskTool(BaseTool):
             )
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_task_due ON tasks(due_at, completed)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_task_location ON tasks(latitude, longitude)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_task_place ON tasks(place_id)"
             )
             conn.commit()
 
@@ -127,6 +143,40 @@ class TaskTool(BaseTool):
                     "type": "string",
                     "description": "Chat identifier",
                 },
+                "people": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "People associated with this task (optional)",
+                },
+                "location": {
+                    "type": "string",
+                    "description": "Location description (e.g., 'Mercadona, Gran Vía') (optional)",
+                },
+                "latitude": {
+                    "type": "number",
+                    "description": "GPS latitude coordinate (optional)",
+                },
+                "longitude": {
+                    "type": "number",
+                    "description": "GPS longitude coordinate (optional)",
+                },
+                "place_id": {
+                    "type": "string",
+                    "description": "Google Maps Place ID for precise location (optional)",
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Task tags for categorization (e.g., ['urgente', 'trabajo']) (optional)",
+                },
+                "reminder_distance": {
+                    "type": "integer",
+                    "description": "Distance in meters for location-based reminder (optional)",
+                },
+                "media_path": {
+                    "type": "string",
+                    "description": "Path to associated media (photo/audio) (optional)",
+                },
             },
             "required": ["operation"],
         }
@@ -163,14 +213,39 @@ class TaskTool(BaseTool):
         user_id = args.get("user_id")
         chat_id = args.get("chat_id")
 
+        # Extract enhanced fields
+        people = args.get("people", [])
+        location = args.get("location")
+        latitude = args.get("latitude")
+        longitude = args.get("longitude")
+        place_id = args.get("place_id")
+        tags = args.get("tags", [])
+        reminder_distance = args.get("reminder_distance")
+        media_path = args.get("media_path")
+        metadata = args.get("metadata", {})
+
+        # Serialize JSON fields
+        people_json = json.dumps(people) if people else None
+        tags_json = json.dumps(tags) if tags else None
+        metadata_json = json.dumps(metadata) if metadata else None
+
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 """
-                INSERT INTO tasks (id, title, description, due_at, priority,
-                                   user_id, chat_id, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tasks (
+                    id, title, description, due_at, priority,
+                    user_id, chat_id, created_at, updated_at,
+                    people, location, latitude, longitude, place_id,
+                    tags, reminder_distance, media_path, metadata
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-                (task_id, title, description, due_at, priority, user_id, chat_id, now, now),
+                (
+                    task_id, title, description, due_at, priority,
+                    user_id, chat_id, now, now,
+                    people_json, location, latitude, longitude, place_id,
+                    tags_json, reminder_distance, media_path, metadata_json
+                ),
             )
             conn.commit()
 
@@ -183,6 +258,13 @@ class TaskTool(BaseTool):
             "due_at": due_at,
             "priority": priority,
             "created_at": now,
+            "people": people,
+            "location": location,
+            "coordinates": (latitude, longitude) if latitude and longitude else None,
+            "place_id": place_id,
+            "tags": tags,
+            "reminder_distance": reminder_distance,
+            "media_path": media_path,
         }
 
     async def _complete_task(self, args: dict[str, Any]) -> dict[str, Any]:
@@ -231,7 +313,9 @@ class TaskTool(BaseTool):
 
             query = """
                 SELECT id, title, description, due_at, priority,
-                       completed, created_at, updated_at, completed_at
+                       completed, created_at, updated_at, completed_at,
+                       people, location, latitude, longitude, place_id,
+                       tags, reminder_distance, media_path, metadata
                 FROM tasks
             """
             params = []
@@ -253,7 +337,41 @@ class TaskTool(BaseTool):
             query += " ORDER BY priority DESC, due_at ASC, created_at DESC"
 
             cursor = conn.execute(query, params)
-            tasks = [dict(row) for row in cursor.fetchall()]
+            
+            tasks = []
+            for row in cursor.fetchall():
+                task = dict(row)
+                
+                # Deserialize JSON fields
+                if task.get("people"):
+                    try:
+                        task["people"] = json.loads(task["people"])
+                    except (json.JSONDecodeError, TypeError):
+                        task["people"] = []
+                else:
+                    task["people"] = []
+                
+                if task.get("tags"):
+                    try:
+                        task["tags"] = json.loads(task["tags"])
+                    except (json.JSONDecodeError, TypeError):
+                        task["tags"] = []
+                else:
+                    task["tags"] = []
+                
+                if task.get("metadata"):
+                    try:
+                        task["metadata"] = json.loads(task["metadata"])
+                    except (json.JSONDecodeError, TypeError):
+                        task["metadata"] = {}
+                else:
+                    task["metadata"] = {}
+                
+                # Add coordinates tuple if both lat/lon present
+                if task.get("latitude") and task.get("longitude"):
+                    task["coordinates"] = (task["latitude"], task["longitude"])
+                
+                tasks.append(task)
 
         return {
             "tasks": tasks,

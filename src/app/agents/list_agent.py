@@ -3,6 +3,7 @@
 import re
 from typing import Any
 
+from app.agents.enrichment_types import AgentResponse
 from app.llm import LLMService
 from app.tools.list_tool import ListTool
 from app.tracing import get_tracer
@@ -115,10 +116,14 @@ class ListAgent(BaseAgent):
                 if result["count"] == 0:
                     response = f"🛒 Tu **{list_name}** está vacía."
                 else:
-                    items_text = "\n".join([
-                        f"{'✅' if item['completed'] else '⬜'} {item['text']}"
-                        for item in result["items"]
-                    ])
+                    items_list = []
+                    for item in result["items"]:
+                        checkbox = '✅' if item['completed'] else '⬜'
+                        text = item['text']
+                        media_indicator = self._get_media_indicator(item)
+                        items_list.append(f"{checkbox} {text}{media_indicator}")
+                    
+                    items_text = "\n".join(items_list)
                     response = f"🛒 **{list_name.title()}**:\n\n{items_text}\n\n_{result['count']} elemento(s)_"
             else:
                 # Show all lists
@@ -146,38 +151,43 @@ class ListAgent(BaseAgent):
     
     async def _handle_add(
         self, message: str, chat_id: str, user_id: str
-    ) -> AgentResult:
-        """Handle adding items to list."""
+    ) -> AgentResponse:
+        """Handle adding items to list (with enrichment support)."""
         # Extract items and list name
         items, list_name = self._extract_items_and_list(message)
         
         if not items:
-            return AgentResult(
-                success=False,
+            # Return error as AgentResponse
+            return AgentResponse(
                 message="No pude encontrar qué elementos añadir. Prueba: 'Añade leche a la lista de la compra'",
-                error="No items extracted"
+                success=False,
+                needs_enrichment=False,
             )
         
-        # Create preview
+        # Create preview message
         if len(items) == 1:
-            preview = f"🛒 ¿Añadir **{items[0]}** a tu {list_name}?"
+            preview = f"✅ Perfecto, agregaré **{items[0]}** a tu {list_name}"
         else:
-            items_list = "\n".join([f"  • {item}" for item in items])
-            preview = f"🛒 ¿Añadir {len(items)} elementos a tu {list_name}?\n\n{items_list}"
+            preview = f"✅ Perfecto, agregaré {len(items)} elementos a tu {list_name}"
         
-        # Return with confirmation needed
-        return AgentResult(
-            success=True,
+        # Return with enrichment support for first item
+        # (For multiple items, we'll only enrich the first one for simplicity)
+        first_item = items[0]
+        
+        return AgentResponse(
             message=preview,
-            needs_confirmation=True,
-            preview=preview,
-            data={
-                "items": items,
+            success=True,
+            needs_enrichment=True,  # Enable enrichment
+            extracted_data={
+                "operation": "add_item",
                 "list_name": list_name,
-                "operation": "add",
-                "chat_id": chat_id,
+                "item_text": first_item,
                 "user_id": user_id,
-            }
+                "chat_id": chat_id,
+                # Additional items for batch add (future)
+                "remaining_items": items[1:] if len(items) > 1 else [],
+            },
+            operation="add_item",
         )
     
     async def execute_confirmed(self, data: dict[str, Any]) -> AgentResult:
@@ -220,11 +230,138 @@ class ListAgent(BaseAgent):
         self, message: str, chat_id: str, user_id: str
     ) -> AgentResult:
         """Handle removing items from list."""
-        return AgentResult(
-            success=False,
-            message="La función de eliminar elementos aún no está implementada.",
-            error="Not implemented"
-        )
+        try:
+            # Extract what to remove and from which list
+            items_to_remove, list_name = self._extract_items_for_removal(message)
+            
+            if not items_to_remove:
+                # Check if user wants to clear entire list
+                if any(word in message.lower() for word in ["todos", "todo", "all", "everything", "clear", "vacía"]):
+                    # Get list name
+                    if not list_name:
+                        list_name = "Compra"  # Default
+                    
+                    return AgentResult(
+                        success=True,
+                        message=f"⚠️ ¿Estás seguro de que quieres eliminar TODOS los elementos de '{list_name}'?",
+                        needs_confirmation=True,
+                        data={
+                            "action": "clear_list",
+                            "list_name": list_name,
+                            "chat_id": chat_id,
+                            "user_id": user_id
+                        }
+                    )
+                
+                return AgentResult(
+                    success=False,
+                    message="No pude entender qué quieres eliminar. Prueba: 'Quita leche de la lista' o 'Elimina todos los artículos'",
+                    error="No items to remove found"
+                )
+            
+            # Remove specific items
+            result = self.list_tool.remove_items(
+                user_id=user_id,
+                list_name=list_name or "Compra",
+                items=items_to_remove
+            )
+            
+            if result.get("success"):
+                removed_count = result.get("removed_count", 0)
+                if removed_count > 0:
+                    message = f"✅ Eliminé {removed_count} elemento(s) de la lista"
+                else:
+                    message = "❌ No encontré esos elementos en la lista"
+                
+                return AgentResult(success=True, message=message)
+            else:
+                return AgentResult(
+                    success=False,
+                    message=f"No pude eliminar los elementos: {result.get('error', 'error desconocido')}",
+                    error=result.get("error")
+                )
+                
+        except Exception as e:
+            logger.error(f"Failed to remove items: {e}")
+            return AgentResult(
+                success=False,
+                message=f"No pude eliminar los elementos: {str(e)}",
+                error=str(e)
+            )
+    
+    async def execute_confirmed(self, data: dict[str, Any]) -> AgentResult:
+        """Execute confirmed action (like clearing entire list)."""
+        try:
+            action = data.get("action")
+            
+            if action == "clear_list":
+                list_name = data["list_name"]
+                user_id = data["user_id"]
+                
+                result = self.list_tool.clear_list(
+                    user_id=user_id,
+                    list_name=list_name
+                )
+                
+                if result.get("success"):
+                    return AgentResult(
+                        success=True,
+                        message=f"✅ Lista '{list_name}' vaciada completamente"
+                    )
+                else:
+                    return AgentResult(
+                        success=False,
+                        message=f"No pude vaciar la lista: {result.get('error', 'error desconocido')}",
+                        error=result.get("error")
+                    )
+            
+            return AgentResult(
+                success=False,
+                message="Acción no reconocida",
+                error="Unknown action"
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to execute confirmed action: {e}")
+            return AgentResult(
+                success=False,
+                message=f"Error al ejecutar acción: {str(e)}",
+                error=str(e)
+            )
+    
+    def _extract_items_for_removal(self, message: str) -> tuple[list[str], str]:
+        """Extract items to remove and list name."""
+        prompt = f"""Extrae qué elementos eliminar y de qué lista:
+
+Mensaje: "{message}"
+
+Devuelve JSON:
+{{
+    "items": ["item1", "item2"] o [],
+    "list_name": "nombre de la lista" o null,
+    "clear_all": true/false
+}}
+
+Ejemplos:
+- "Quita leche de la compra" → {{"items": ["leche"], "list_name": "Compra"}}
+- "Elimina pan y huevos" → {{"items": ["pan", "huevos"], "list_name": null}}
+- "Borra todos los artículos" → {{"items": [], "clear_all": true}}
+"""
+        
+        try:
+            result = self.llm.generate_json(
+                prompt=prompt,
+                system_prompt="Extrae datos de eliminación de listas. Devuelve SOLO JSON válido."
+            )
+            
+            items = result.get("items", [])
+            list_name = result.get("list_name")
+            
+            return items, list_name
+            
+        except Exception as e:
+            logger.error(f"Item removal extraction failed: {e}")
+            return [], None
     
     def _extract_items_and_list(self, message: str) -> tuple[list[str], str]:
         """
@@ -277,6 +414,43 @@ Reglas:
         items = [item.strip() for item in items if item.strip()]
         
         return items
+    
+    def _get_media_indicator(self, item: dict[str, Any]) -> str:
+        """Get media indicator emoji for a list item."""
+        media_path = item.get("media_path")
+        if not media_path:
+            return ""
+        
+        # Determine media type from metadata or path
+        metadata = item.get("metadata", {})
+        if isinstance(metadata, str):
+            try:
+                import json
+                metadata = json.loads(metadata)
+            except:
+                metadata = {}
+        
+        media_info = metadata.get("media", {})
+        media_type = media_info.get("media_type")
+        
+        # Fallback: detect from file extension
+        if not media_type and media_path:
+            if "photos" in media_path or media_path.endswith((".jpg", ".jpeg", ".png")):
+                media_type = "photo"
+            elif "voice" in media_path or media_path.endswith((".ogg", ".mp3", ".wav")):
+                media_type = "voice"
+            elif "documents" in media_path:
+                media_type = "document"
+        
+        # Return appropriate emoji
+        if media_type == "photo":
+            return " 📷"
+        elif media_type == "voice":
+            return " 🎤"
+        elif media_type == "document":
+            return " 📄"
+        else:
+            return " 📎"  # Generic attachment
     
     def _extract_list_name(self, message: str) -> str | None:
         """Extract list name from message."""
