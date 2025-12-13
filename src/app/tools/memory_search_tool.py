@@ -3,9 +3,19 @@
 from typing import Any, Optional
 
 from crewai.tools import BaseTool as CrewAIBaseTool
+from pydantic import BaseModel, Field
 
 from app.memory import MemoryQuery, MemoryService
 from app.tracing import get_tracer
+
+
+class MemorySearchSchema(BaseModel):
+    """Schema for memory search tool inputs."""
+    query: str = Field(..., description="Search query text")
+    limit: int = Field(5, description="Maximum number of results to return")
+    people: Optional[str] = Field(None, description="Comma-separated list of people to filter by")
+    tags: Optional[str] = Field(None, description="Comma-separated list of tags to filter by")
+    location: Optional[str] = Field(None, description="Location to filter by")
 
 
 class MemorySearchTool(CrewAIBaseTool):
@@ -17,6 +27,7 @@ class MemorySearchTool(CrewAIBaseTool):
         "Use this tool to find memories based on semantic similarity. "
         "Provide only the search query - user context is automatically included."
     )
+    args_schema: type[BaseModel] = MemorySearchSchema
     
     # Use class attributes to avoid Pydantic validation
     _memory_service: MemoryService | None = None

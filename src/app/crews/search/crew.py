@@ -218,13 +218,22 @@ Output a search strategy with recommended sources and search criteria.""",
 
 Query: "{query}"
 
+⚠️ MANDATORY: YOU MUST CALL THE memory_search TOOL - DO NOT ANSWER WITHOUT CALLING IT ⚠️
+
 INSTRUCTIONS:
-1. Create ONE semantic search query combining the main topic and key entities from the coordinator's analysis
-2. Use the memory_search tool ONCE with this comprehensive query
-3. DO NOT invent or assume entities, people, places, or items that weren't explicitly mentioned in the original query or coordinator's analysis
-4. If no results are found, report "No memories found matching the query" - do NOT fabricate or hallucinate results
-5. Return ONLY the actual memories retrieved from the database, with their metadata (timestamps, people, locations, tags)
-6. Use the coordinator's recommended filters (people, dates, tags, location) ONLY if they were explicitly mentioned
+1. FIRST: Call the memory_search tool with a comprehensive semantic query
+2. WAIT for the tool to return actual database results
+3. ONLY report what the tool actually returned - copy the exact content, timestamps, and metadata
+4. DO NOT invent or assume entities, people, places, or items that weren't explicitly mentioned in the original query or coordinator's analysis
+5. If no results are found, report "No memories found matching the query" - do NOT fabricate or hallucinate results
+6. Return ONLY the actual memories retrieved from the database, with their metadata (timestamps, people, locations, tags)
+7. Use the coordinator's recommended filters (people, dates, tags, location) ONLY if they were explicitly mentioned
+
+🚫 FORBIDDEN:
+- Generating answers without calling the tool
+- Making up timestamps (especially dates from 2023 when the app was created in 2025)
+- Inventing names, places, or content that wasn't in the tool's response
+- Assuming what might be in the database
 
 IMPORTANT: Semantic search handles multiple concepts in one query. You do NOT need to perform multiple separate searches.""",
             agent=self.memory_searcher_agent,

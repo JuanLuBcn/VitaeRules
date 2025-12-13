@@ -38,7 +38,7 @@ def get_crewai_llm(llm_service: LLMService = None):
         llm = LLM(
             model=f"ollama/{settings.ollama_model}",
             base_url=ollama_url,
-            temperature=0.7,
+            temperature=0.1,
         )
         
         logger.info(
@@ -56,7 +56,7 @@ def get_crewai_llm(llm_service: LLMService = None):
             model=settings.openrouter_model,
             base_url="https://openrouter.ai/api/v1",
             api_key=settings.openrouter_api_key,
-            temperature=0.7,
+            temperature=0.1,
         )
         
         logger.info(
