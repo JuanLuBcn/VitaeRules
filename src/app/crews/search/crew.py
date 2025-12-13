@@ -247,17 +247,22 @@ IMPORTANT: Semantic search handles multiple concepts in one query. You do NOT ne
 
 Query: "{query}"
 
-INSTRUCTIONS:
-1. Use the task_tool ONCE to search for relevant tasks
-2. Filter by status, due date, and priority as recommended by the coordinator
-3. DO NOT invent tasks or assume what tasks might exist
-4. If no results are found, report "No tasks found matching the query"
-5. Return ONLY actual tasks from the database with their metadata (title, due date, priority, status, description)
+CRITICAL INSTRUCTIONS:
+1. Call the task_search tool with a single dictionary input like: {{"search_query": "text", "completed": null}}
+2. Use completed=null for all tasks, completed=false for pending, completed=true for completed
+3. Extract search terms from the query (names, keywords, dates)
+4. Wait for the tool result - DO NOT make up results
+5. Return what the tool actually found
 
-Focus on the query's actual intent - search for what was asked, not what you think might exist.""",
+Example tool calls:
+- {{"search_query": "birthday", "completed": null}}
+- {{"completed": false}} (all pending tasks)
+- {{"search_query": "Olivia", "completed": null}}
+
+DO NOT return arrays like [{{"input": ...}}, {{"result": ...}}]. Call the tool properly and wait for results.""",
             agent=self.task_searcher_agent,
             context=[coordination_task],
-            expected_output="List of relevant tasks with metadata, or 'No tasks found'",
+            expected_output="Actual task search results from the tool, formatted clearly",
         )
 
         # Task 4: List Search (if applicable)
@@ -266,17 +271,21 @@ Focus on the query's actual intent - search for what was asked, not what you thi
 
 Query: "{query}"
 
-INSTRUCTIONS:
-1. Use the list_tool ONCE to search for relevant lists and items
-2. Search list names and item contents as recommended by the coordinator
-3. DO NOT invent lists or items that don't exist
-4. If no results are found, report "No lists found matching the query"
-5. Return ONLY actual lists and items from the database with their metadata (list name, position, status, tags, location)
+CRITICAL INSTRUCTIONS:
+1. Call the list_search tool with a single dictionary input like: {{"search_query": "text"}}
+2. Extract search terms from the query (names, keywords, categories)
+3. Wait for the tool result - DO NOT make up results
+4. Return what the tool actually found
 
-Focus on the query's actual intent - search for what was asked, not what you think might exist.""",
+Example tool calls:
+- {{"search_query": "shopping"}}
+- {{"search_query": "birthday"}}
+- {{"search_query": "Olivia"}}
+
+DO NOT return arrays like [{{"input": ...}}, {{"result": ...}}]. Call the tool properly and wait for results.""",
             agent=self.list_searcher_agent,
             context=[coordination_task],
-            expected_output="List of relevant list items grouped by list, or 'No lists found'",
+            expected_output="Actual list search results from the tool, formatted clearly",
         )
 
         # Task 5: Aggregation - combine and format results
@@ -342,45 +351,141 @@ Make the response concise but informative.""",
         search_strategy = coordinator_result.pydantic
         logger.info(f"Coordinator strategy: {search_strategy}")
         
-        # Determine which searches to execute based on structured output
-        should_search_memory = search_strategy.memory.relevant
-        should_search_tasks = search_strategy.tasks.relevant
-        should_search_lists = search_strategy.lists.relevant
+        # Helper function to determine if search should execute based on priority
+        def should_execute_search(priority: str, has_high_priority_results: bool) -> bool:
+            """
+            Determine if a search should be executed based on its priority and previous results.
+            
+            Args:
+                priority: Priority level (high, medium, low, very low)
+                has_high_priority_results: Whether high priority searches already found results
+            
+            Returns:
+                True if search should execute, False to skip
+            """
+            priority_lower = priority.lower()
+            
+            # Always execute HIGH and MEDIUM priority
+            if priority_lower in ["high", "medium"]:
+                return True
+            
+            # For LOW and VERY LOW, only execute if high priority found nothing
+            if priority_lower in ["low", "very low"]:
+                if has_high_priority_results:
+                    logger.info(f"Skipping {priority} priority search - high priority search already found results")
+                    return False
+                return True
+            
+            # Default to executing
+            return True
         
-        logger.info(f"Search decisions - Memory: {should_search_memory}, Tasks: {should_search_tasks}, Lists: {should_search_lists}")
+        # Phase 1: Execute HIGH priority searches first
+        high_priority_tasks = []
+        high_priority_found = False
         
-        # Build task list conditionally
-        tasks_to_execute = [coordination_task]  # Always include coordination (already executed)
-        search_tasks_context = [coordination_task]  # Context for aggregator
+        memory_priority = search_strategy.memory.priority.lower()
+        tasks_priority = search_strategy.tasks.priority.lower()
+        lists_priority = search_strategy.lists.priority.lower()
         
-        if should_search_memory:
-            logger.info("Adding memory search task (HIGH/MEDIUM relevance)")
+        logger.info(f"Search priorities - Memory: {memory_priority}, Tasks: {tasks_priority}, Lists: {lists_priority}")
+        
+        # Execute HIGH priority searches
+        if search_strategy.memory.relevant and memory_priority == "high":
+            logger.info("Executing HIGH priority: memory search")
+            high_priority_tasks.append(memory_search_task)
+        
+        if search_strategy.tasks.relevant and tasks_priority == "high":
+            logger.info("Executing HIGH priority: task search")
+            high_priority_tasks.append(task_search_task)
+        
+        if search_strategy.lists.relevant and lists_priority == "high":
+            logger.info("Executing HIGH priority: list search")
+            high_priority_tasks.append(list_search_task)
+        
+        # If we have HIGH priority tasks, execute them first to check for results
+        if high_priority_tasks:
+            logger.info(f"Executing {len(high_priority_tasks)} HIGH priority searches first")
+            self._crew.tasks = [coordination_task] + high_priority_tasks
+            
+            try:
+                high_priority_result = self._crew.kickoff(
+                    inputs={
+                        "query": query,
+                        "sources": sources_str,
+                        "chat_id": context.chat_id,
+                        "user_id": context.user_id,
+                    }
+                )
+                # Check if high priority searches found results
+                # Simple heuristic: if output contains "No" or "not found" or is very short, likely no results
+                result_text = str(high_priority_result).lower()
+                if len(result_text) > 100 and "no" not in result_text[:50] and "not found" not in result_text[:100]:
+                    high_priority_found = True
+                    logger.info("HIGH priority searches found results")
+                else:
+                    logger.info("HIGH priority searches found no results")
+            except Exception as e:
+                logger.warning(f"HIGH priority search execution had issues: {e}")
+        
+        # Phase 2: Build full task list with conditional LOW/VERY LOW searches
+        tasks_to_execute = [coordination_task]
+        search_tasks_context = [coordination_task]
+        
+        # Add HIGH priority tasks (already executed, but include in final task list)
+        if search_strategy.memory.relevant and memory_priority == "high":
             tasks_to_execute.append(memory_search_task)
             search_tasks_context.append(memory_search_task)
-        else:
-            logger.info("Skipping memory search (LOW relevance)")
         
-        if should_search_tasks:
-            logger.info("Adding task search task (HIGH/MEDIUM relevance)")
+        if search_strategy.tasks.relevant and tasks_priority == "high":
             tasks_to_execute.append(task_search_task)
             search_tasks_context.append(task_search_task)
-        else:
-            logger.info("Skipping task search (LOW relevance)")
         
-        if should_search_lists:
-            logger.info("Adding list search task (HIGH/MEDIUM relevance)")
+        if search_strategy.lists.relevant and lists_priority == "high":
             tasks_to_execute.append(list_search_task)
             search_tasks_context.append(list_search_task)
-        else:
-            logger.info("Skipping list search (LOW relevance)")
+        
+        # Add MEDIUM priority tasks (always execute)
+        if search_strategy.memory.relevant and memory_priority == "medium":
+            logger.info("Adding MEDIUM priority: memory search")
+            tasks_to_execute.append(memory_search_task)
+            search_tasks_context.append(memory_search_task)
+        
+        if search_strategy.tasks.relevant and tasks_priority == "medium":
+            logger.info("Adding MEDIUM priority: task search")
+            tasks_to_execute.append(task_search_task)
+            search_tasks_context.append(task_search_task)
+        
+        if search_strategy.lists.relevant and lists_priority == "medium":
+            logger.info("Adding MEDIUM priority: list search")
+            tasks_to_execute.append(list_search_task)
+            search_tasks_context.append(list_search_task)
+        
+        # Conditionally add LOW/VERY LOW priority tasks
+        if search_strategy.memory.relevant and memory_priority in ["low", "very low"]:
+            if should_execute_search(memory_priority, high_priority_found):
+                logger.info(f"Adding {memory_priority} priority: memory search")
+                tasks_to_execute.append(memory_search_task)
+                search_tasks_context.append(memory_search_task)
+        
+        if search_strategy.tasks.relevant and tasks_priority in ["low", "very low"]:
+            if should_execute_search(tasks_priority, high_priority_found):
+                logger.info(f"Adding {tasks_priority} priority: task search")
+                tasks_to_execute.append(task_search_task)
+                search_tasks_context.append(task_search_task)
+        
+        if search_strategy.lists.relevant and lists_priority in ["low", "very low"]:
+            if should_execute_search(lists_priority, high_priority_found):
+                logger.info(f"Adding {lists_priority} priority: list search")
+                tasks_to_execute.append(list_search_task)
+                search_tasks_context.append(list_search_task)
         
         # Update aggregation task context to only include executed searches
         aggregation_task.context = search_tasks_context
         tasks_to_execute.append(aggregation_task)
         
-        logger.info(f"Executing {len(tasks_to_execute)} tasks total ({len(search_tasks_context) - 1} searches)")
+        logger.info(f"Final execution plan: {len(tasks_to_execute)} tasks total ({len(search_tasks_context) - 1} searches)")
         
-        # Set tasks on the crew
+        # Set tasks on the crew for final execution
         self._crew.tasks = tasks_to_execute
 
         # Execute the remaining crew workflow

@@ -35,11 +35,20 @@ def create_list_searcher_agent(llm=None, list_search_tool=None) -> Agent:
             "You know how to filter by completion status (show pending items vs all items). "
             "You retrieve list items with context (which list they belong to, position, "
             "tags, location data if relevant). You present results grouped by list for "
-            "clarity and usefulness."
+            "clarity and usefulness.\n\n"
+            "CRITICAL FORMAT RULES:\n"
+            "1. Output ONLY ONE tool call at a time\n"
+            "2. Use ONLY dictionary format: {\"key\": \"value\"}\n"
+            "3. NEVER use array format: [{...}, {...}]\n"
+            "4. The 'list_name' parameter is OPTIONAL:\n"
+            "   - If you know the list: {\"search_query\": \"milk\", \"list_name\": \"Shopping\"}\n"
+            "   - If you don't know: {\"search_query\": \"milk\", \"list_name\": null}\n"
+            "   - NEVER pass empty string: {\"list_name\": \"\"}\n"
         ),
         "verbose": True,
         "allow_delegation": False,
         "tools": [list_search_tool],
+        "max_iter": 5,
     }
 
     if llm:

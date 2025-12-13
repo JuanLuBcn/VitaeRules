@@ -1,9 +1,24 @@
 """List Search Tool for CrewAI agents."""
 
+from typing import Optional, Type
+from pydantic import BaseModel, Field
 from crewai.tools import BaseTool as CrewAIBaseTool
 
 from app.tools.list_tool import ListTool
 from app.tracing import get_tracer
+
+
+class ListSearchToolSchema(BaseModel):
+    """Input schema for ListSearchTool."""
+
+    search_query: Optional[str] = Field(
+        default=None,
+        description="Keywords to search for in list names and item contents"
+    )
+    list_name: Optional[str] = Field(
+        default=None,
+        description="Optional: specific list name to search within. Leave empty to search all lists"
+    )
 
 
 class ListSearchTool(CrewAIBaseTool):
@@ -15,6 +30,7 @@ class ListSearchTool(CrewAIBaseTool):
         "shopping lists, todo lists, or any collection of items. "
         "User context is automatically included."
     )
+    args_schema: Type[BaseModel] = ListSearchToolSchema
     
     # Use class attributes to avoid Pydantic validation
     _list_tool: ListTool | None = None
@@ -58,6 +74,17 @@ class ListSearchTool(CrewAIBaseTool):
         
         Note: user_id and chat_id are taken from the tool's stored context
         """
+        tracer = get_tracer()
+        
+        # Handle case where LLM outputs array instead of dict
+        if isinstance(search_query, list):
+            tracer.warning(f"Received array for 'search_query': {search_query}, extracting first element")
+            search_query = search_query[0] if len(search_query) > 0 and isinstance(search_query[0], str) else None
+        
+        if isinstance(list_name, list):
+            tracer.warning(f"Received array for 'list_name': {list_name}, extracting first element")
+            list_name = list_name[0] if len(list_name) > 0 and isinstance(list_name[0], str) else None
+        
         try:
             # Get all lists
             import asyncio

@@ -1,10 +1,24 @@
 """Task Search Tool for CrewAI agents."""
 
-from typing import Optional
+from typing import Optional, Type
+from pydantic import BaseModel, Field
 from crewai.tools import BaseTool as CrewAIBaseTool
 
 from app.tools.task_tool import TaskTool
 from app.tracing import get_tracer
+
+
+class TaskSearchToolSchema(BaseModel):
+    """Input schema for TaskSearchTool."""
+
+    completed: Optional[bool] = Field(
+        default=None,
+        description="Filter by completion status: True=completed, False=pending, None=all tasks"
+    )
+    search_query: Optional[str] = Field(
+        default=None,
+        description="Optional text to search in task titles and descriptions"
+    )
 
 
 class TaskSearchTool(CrewAIBaseTool):
@@ -16,6 +30,7 @@ class TaskSearchTool(CrewAIBaseTool):
         "Use this tool to find pending tasks, completed tasks, or search by text. "
         "User context is automatically included."
     )
+    args_schema: Type[BaseModel] = TaskSearchToolSchema
     
     # Use class attributes to avoid Pydantic validation
     _task_tool: TaskTool | None = None
@@ -59,6 +74,17 @@ class TaskSearchTool(CrewAIBaseTool):
         
         Note: user_id and chat_id are taken from the tool's stored context
         """
+        tracer = get_tracer()
+        
+        # Handle case where LLM outputs array instead of dict
+        if isinstance(completed, list):
+            tracer.warning(f"Received array for 'completed': {completed}, extracting first element")
+            completed = completed[0] if len(completed) > 0 and isinstance(completed[0], (bool, type(None))) else None
+        
+        if isinstance(search_query, list):
+            tracer.warning(f"Received array for 'search_query': {search_query}, extracting first element")
+            search_query = search_query[0] if len(search_query) > 0 and isinstance(search_query[0], str) else None
+        
         try:
             # Build arguments for list_tasks using stored context
             args = {
