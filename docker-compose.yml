@@ -8,7 +8,7 @@ services:
       # Removed bind mount for .env to avoid path issues in Docker-in-Docker
       # The .env file is now copied into the image during build
     environment:
-      - APP_ENV=production
+      - APP_ENV=prod
       # If Ollama is running on the host machine (outside Docker), use this URL:
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
     # Allow the container to reach the host machine via 'host.docker.internal'

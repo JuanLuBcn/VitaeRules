@@ -432,7 +432,7 @@ Make the response concise but informative.""",
         # If we have HIGH priority tasks, execute them first to check for results
         if high_priority_tasks:
             logger.info(f"Executing {len(high_priority_tasks)} HIGH priority searches first")
-            self._crew.tasks = [coordination_task] + high_priority_tasks
+            self._crew.tasks = [coordination_task] + high_priority_tasks + [aggregation_task]
             
             try:
                 high_priority_result = self._crew.kickoff(
@@ -444,32 +444,26 @@ Make the response concise but informative.""",
                     }
                 )
                 # Check if high priority searches found results
-                # Simple heuristic: if output contains "No" or "not found" or is very short, likely no results
-                result_text = str(high_priority_result).lower()
-                if len(result_text) > 100 and "no" not in result_text[:50] and "not found" not in result_text[:100]:
-                    high_priority_found = True
-                    logger.info("HIGH priority searches found results")
-                else:
+                # Simple heuristic: if output contains "No" or "not found" or "don't have", likely no results
+                result_text = str(high_priority_result.raw).lower() if hasattr(high_priority_result, 'raw') else str(high_priority_result).lower()
+                if "don't have" in result_text or "no information" in result_text or "not found" in result_text:
+                    high_priority_found = False
                     logger.info("HIGH priority searches found no results")
+                else:
+                    high_priority_found = True
+                    logger.info("HIGH priority searches found results - returning immediately")
+                    # Return the result immediately, don't execute MEDIUM/LOW priority searches
+                    return self._parse_search_result(high_priority_result, query, context)
             except Exception as e:
                 logger.warning(f"HIGH priority search execution had issues: {e}")
         
         # Phase 2: Build full task list with conditional LOW/VERY LOW searches
+        # Note: HIGH priority tasks were already executed above, only add MEDIUM/LOW/VERY LOW here
         tasks_to_execute = [coordination_task]
         search_tasks_context = [coordination_task]
         
-        # Add HIGH priority tasks (already executed, but include in final task list)
-        if search_strategy.memory.relevant and memory_priority == "high":
-            tasks_to_execute.append(memory_search_task)
-            search_tasks_context.append(memory_search_task)
-        
-        if search_strategy.tasks.relevant and tasks_priority == "high":
-            tasks_to_execute.append(task_search_task)
-            search_tasks_context.append(task_search_task)
-        
-        if search_strategy.lists.relevant and lists_priority == "high":
-            tasks_to_execute.append(list_search_task)
-            search_tasks_context.append(list_search_task)
+        # Do NOT add HIGH priority tasks again - they were already executed
+        # Only add MEDIUM and lower priority tasks from this point forward
         
         # Add MEDIUM priority tasks (always execute)
         if search_strategy.memory.relevant and memory_priority == "medium":

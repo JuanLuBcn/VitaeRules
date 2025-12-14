@@ -45,7 +45,7 @@ COPY .env* ./
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app/src"
-ENV APP_ENV=production
+ENV APP_ENV=prod
 
 # Create data directory
 RUN mkdir -p data

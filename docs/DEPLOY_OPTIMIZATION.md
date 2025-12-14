@@ -17,12 +17,24 @@ This update optimizes the search flow based on Pi5 log analysis:
 ```bash
 # From your Windows machine
 ssh root@homeassistant.local
-# Or from Home Assistant Terminal addon
+# Or open Home Assistant > Settings > Add-ons > Terminal & SSH
 ```
 
-### 2. Navigate and Pull Updates
+### 2. Find and Navigate to VitaeRules
 ```bash
-cd /config/VitaeRules
+# The repo location depends on where you cloned it
+# Try these common locations:
+cd ~/VitaeRules     # Home directory
+# OR
+cd /root/VitaeRules # Root user home
+
+# Verify you're in the right place
+pwd  # Should show the VitaeRules path
+ls   # Should show Dockerfile, src/, docs/, etc.
+```
+
+### 3. Pull Updates
+```bash
 git pull origin main
 ```
 
@@ -43,7 +55,7 @@ Fast-forward
  8 files changed, 1450 insertions(+), 31 deletions(-)
 ```
 
-### 3. Rebuild Container
+### 4. Rebuild Container
 ```bash
 # Stop and remove old container
 docker stop vitaerules
@@ -53,7 +65,7 @@ docker rm vitaerules
 docker build -t vitaerules:latest .
 ```
 
-### 4. Run Updated Container
+### 5. Run Updated Container
 ```bash
 docker run -d --name vitaerules --restart unless-stopped --network host \
   -e APP_ENV=prod \
@@ -62,7 +74,7 @@ docker run -d --name vitaerules --restart unless-stopped --network host \
   vitaerules:latest
 ```
 
-### 5. Monitor Logs for Optimization
+### 6. Monitor Logs for Optimization
 ```bash
 # Watch logs for new optimization messages
 docker logs -f vitaerules | grep -E "priority|Skipping|execution plan"
@@ -74,7 +86,7 @@ docker logs -f vitaerules | grep -E "priority|Skipping|execution plan"
 - ✅ `Final execution plan: 3 tasks total (1 searches)` (fewer searches)
 - ✅ No more `Action Input is not a valid key, value dictionary` errors
 
-### 6. Test Same Query
+### 7. Test Same Query
 Send the same query you tested before:
 
 **User:** "Que edad tiene Olivia?"
@@ -85,7 +97,7 @@ Send the same query you tested before:
 - ✅ No tool errors in logs
 - ✅ Cleaner execution flow
 
-### 7. Check Full Logs
+### 8. Check Full Logs
 ```bash
 # Save full logs for comparison
 docker logs vitaerules > /config/vitae_logs_optimized.txt
@@ -113,7 +125,9 @@ docker logs vitaerules > /config/vitae_logs_optimized.txt
 If something goes wrong:
 
 ```bash
-cd /config/VitaeRules
+# Navigate to your VitaeRules directory
+cd ~/VitaeRules  # or cd /root/VitaeRules
+
 git log --oneline -5
 git revert 3b8cb23  # Revert optimization commit
 docker stop vitaerules

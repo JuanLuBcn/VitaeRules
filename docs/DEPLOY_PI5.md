@@ -13,14 +13,30 @@ The bot is now working flawlessly with **minimax-m2:cloud** model! This model co
 ## Manual Deployment Steps
 
 ### 1. SSH into your Raspberry Pi 5
+
+**Option A: Via Home Assistant SSH Addon (Recommended)**
 ```bash
-ssh core@homeassistant.local
-# or whatever your Pi5 address is
+# Open Home Assistant > Settings > Add-ons > Terminal & SSH
+# Or SSH with: ssh root@homeassistant.local
+
+# The repo should be in your home directory
+cd ~/VitaeRules
+# OR if you cloned it in /root
+cd /root/VitaeRules
 ```
 
-### 2. Navigate to VitaeRules directory
+**Option B: Direct SSH to Pi5 (if not using HA container)**
 ```bash
+ssh core@homeassistant.local
 cd VitaeRules
+```
+
+**Note:** The path depends on where you cloned the repo. Check with `pwd` and `ls` to find it.
+
+### 2. Verify you're in the correct directory
+```bash
+pwd  # Should show something like /root/VitaeRules
+ls   # Should show Dockerfile, src/, docs/, etc.
 ```
 
 ### 3. Pull latest code changes
@@ -28,11 +44,10 @@ cd VitaeRules
 git pull origin main
 ```
 
-### 4. Stop the current container
+### 4. Stop and remove the current container
 ```bash
-docker compose down
-# or
 docker stop vitaerules
+docker rm vitaerules
 ```
 
 ### 5. Update .env file with new model
@@ -53,12 +68,22 @@ ollama pull minimax-m2:cloud
 
 ### 7. Rebuild Docker image
 **Important:** The Dockerfile copies .env into the image, so you MUST rebuild after changing .env:
+
 ```bash
-docker compose build --no-cache
+docker build -t vitaerules:latest .
 ```
 
 ### 8. Start the container
 ```bash
+docker run -d \
+  --name vitaerules \
+  --restart unless-stopped \
+  --network host \
+  -e APP_ENV=prod \
+  -e OLLAMA_BASE_URL=http://localhost:11434 \
+  -v vitae_data:/app/data \
+  vitaerules:latest
+```
 docker compose up -d
 ```
 
@@ -93,7 +118,22 @@ cat .env | grep OLLAMA_BASE_URL
 
 ### To restart after changes:
 ```bash
-docker compose restart
+docker restart vitaerules
+```
+
+### To rebuild and restart (after .env changes):
+```bash
+docker stop vitaerules
+docker rm vitaerules
+docker build -t vitaerules:latest .
+docker run -d \
+  --name vitaerules \
+  --restart unless-stopped \
+  --network host \
+  -e APP_ENV=prod \
+  -e OLLAMA_BASE_URL=http://localhost:11434 \
+  -v vitae_data:/app/data \
+  vitaerules:latest
 ```
 
 ## Performance Notes

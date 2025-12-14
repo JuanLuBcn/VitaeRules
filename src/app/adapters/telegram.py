@@ -13,15 +13,15 @@ from telegram.ext import (
     filters,
 )
 
-from app.config import Settings
-from app.crews.capture import CaptureCrew
-from app.crews.chat import ChatContext, ChatCrew
-from app.crews.search import SearchContext, UnifiedSearchCrew
-from app.llm import LLMService
-from app.memory import MemoryService
-from app.services import MediaHandler, WhisperService
-from app.tools.registry import ToolRegistry
-from app.tracing import get_tracer
+from ..config import Settings
+from ..crews.capture import CaptureCrew
+from ..crews.chat import ChatContext, ChatCrew
+from ..crews.search import SearchContext, UnifiedSearchCrew
+from ..llm import LLMService
+from ..memory import MemoryService
+from ..services import MediaHandler, WhisperService
+from ..tools.registry import ToolRegistry
+from ..tracing import get_tracer
 
 logger = get_tracer()
 
@@ -215,8 +215,9 @@ class VitaeBot:
                 context=chat_context,
             )
             
-            # Send response to user
-            await update.message.reply_text(response.message)
+            # Send response to user (with fallback for empty messages)
+            message_text = response.message if response.message and response.message.strip() else "Lo siento, hubo un problema procesando tu mensaje. ¿Puedes intentarlo de nuevo?"
+            await update.message.reply_text(message_text)
             
             logger.info(
                 "message_processed",

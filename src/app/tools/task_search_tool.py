@@ -96,15 +96,35 @@ class TaskSearchTool(CrewAIBaseTool):
             if completed is not None:
                 args["completed"] = completed
 
-            # Execute list_tasks (it's async, so we need to run it)
+            # Execute list_tasks (it's async, but we're in a sync tool method)
+            # CrewAI calls _run() synchronously, but our TaskTool.execute() is async
             import asyncio
+            
+            # Check if there's already an event loop running
             try:
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
+                # We're in an event loop - this happens when Telegram bot calls CrewAI
+                # We can't use run_until_complete or asyncio.run, so we need to await
+                # But we're in a sync function... so we need to create a new thread
+                tracer.warning("Event loop already running - using thread executor")
+                from concurrent.futures import ThreadPoolExecutor
+                import threading
+                
+                def run_async_in_thread():
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        return new_loop.run_until_complete(TaskSearchTool._task_tool.execute(args))
+                    finally:
+                        new_loop.close()
+                
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(run_async_in_thread)
+                    result = future.result(timeout=30)
+                    
             except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            result = loop.run_until_complete(TaskSearchTool._task_tool.execute(args))
+                # No event loop running - safe to use asyncio.run()
+                result = asyncio.run(TaskSearchTool._task_tool.execute(args))
 
             # Extract tasks from result
             if "error" in result:

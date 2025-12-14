@@ -21,6 +21,7 @@ langchain-openai = "^0.2.2"
 faster-whisper = "^1.0.3"
 aiosqlite = "^0.20.0"
 python-dotenv = "^1.0.1"
+python-dateutil = "^2.9.0"
 pytz = "^2024.2"
 
 [tool.poetry.group.dev.dependencies]

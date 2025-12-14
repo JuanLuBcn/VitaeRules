@@ -41,9 +41,23 @@ If you are running this from the **Home Assistant "Advanced SSH & Web Terminal"*
     *   Add your Telegram Bot Token.
 
 3.  **Start the App**
+    
+    **Option A: Using Docker Compose (Recommended if it works)**
     ```bash
     docker compose up -d
     ```
+
+    **Option B: Manual Docker Run (If Compose fails)**
+    If you see errors like `unknown shorthand flag`, use these commands:
+
+    1.  **Build the image**:
+        ```bash
+        docker build -t vitaerules:latest .
+        ```
+    2.  **Run the container**:
+        ```bash
+        ```
+
     This will start only the VitaeRules bot. It assumes Ollama is already listening on port 11434 on the host.
 
 ## Setting up the LLM (Existing Ollama)
@@ -84,5 +98,11 @@ Since you are running this on the same Pi as Home Assistant (assuming HA is also
 
 ## Troubleshooting
 
-*   **"Connection refused" to Ollama**: Ensure the container name in `.env` matches the service name in `docker-compose.yml` (default: `http://ollama:11434`).
+*   **[Errno 111] Connection refused**:
+    *   **Symptom**: Errors like `Error during short_term search: [Errno 111] Connection refused`.
+    *   **Cause**: The bot cannot connect to Ollama for memory embeddings. This usually happens because Ollama is listening only on `localhost` (127.0.0.1) and not accepting external connections from the Docker container.
+    *   **Fix**: Run the container in "Host Network" mode. Add `--network host` to your docker run command and set `OLLAMA_BASE_URL=http://localhost:11434`.
+
+*   **"Connection refused" to Ollama (General)**: Ensure the container name in `.env` matches the service name in `docker-compose.yml` (default: `http://ollama:11434`).
+
 *   **Slow responses**: The Pi 5 CPU is fast for an SBC, but LLMs are heavy. Expect tokens/sec to be around 4-10 depending on the model size.

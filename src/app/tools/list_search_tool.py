@@ -88,19 +88,40 @@ class ListSearchTool(CrewAIBaseTool):
         try:
             # Get all lists
             import asyncio
+            
+            # Check if event loop is already running
             try:
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
+                # Use thread executor when loop exists
+                tracer.warning("Event loop already running - using thread executor for get_lists")
+                from concurrent.futures import ThreadPoolExecutor
+                
+                def run_get_lists():
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        return new_loop.run_until_complete(
+                            ListSearchTool._list_tool.execute({
+                                "operation": "get_lists",
+                                "user_id": self._user_id,
+                                "chat_id": self._chat_id,
+                            })
+                        )
+                    finally:
+                        new_loop.close()
+                
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(run_get_lists)
+                    lists_result = future.result(timeout=30)
             except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            lists_result = loop.run_until_complete(
-                ListSearchTool._list_tool.execute({
-                    "operation": "get_lists",
-                    "user_id": self._user_id,
-                    "chat_id": self._chat_id,
-                })
-            )
+                # No event loop, safe to use asyncio.run()
+                lists_result = asyncio.run(
+                    ListSearchTool._list_tool.execute({
+                        "operation": "get_lists",
+                        "user_id": self._user_id,
+                        "chat_id": self._chat_id,
+                    })
+                )
 
             if "error" in lists_result:
                 return f"List search error: {lists_result['error']}"
@@ -122,12 +143,36 @@ class ListSearchTool(CrewAIBaseTool):
                 list_display_name = list_obj["name"]
 
                 # Get items for this list
-                items_result = loop.run_until_complete(
-                    ListSearchTool._list_tool.execute({
-                        "operation": "list_items",
-                        "list_id": list_id,
-                    })
-                )
+                # Check if event loop is already running
+                try:
+                    current_loop = asyncio.get_running_loop()
+                    # Use thread executor when loop exists
+                    from concurrent.futures import ThreadPoolExecutor
+                    
+                    def run_list_items():
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        try:
+                            return new_loop.run_until_complete(
+                                ListSearchTool._list_tool.execute({
+                                    "operation": "list_items",
+                                    "list_id": list_id,
+                                })
+                            )
+                        finally:
+                            new_loop.close()
+                    
+                    with ThreadPoolExecutor(max_workers=1) as executor:
+                        future = executor.submit(run_list_items)
+                        items_result = future.result(timeout=30)
+                except RuntimeError:
+                    # No event loop, safe to use asyncio.run()
+                    items_result = asyncio.run(
+                        ListSearchTool._list_tool.execute({
+                            "operation": "list_items",
+                            "list_id": list_id,
+                        })
+                    )
 
                 items = items_result.get("items", [])
 

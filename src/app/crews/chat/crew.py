@@ -14,6 +14,7 @@ from crewai import Crew, Process
 from app.config import get_settings
 from app.crews.chat.chat_agent import create_chat_agent
 from app.crews.chat.intent_analyzer import create_intent_analyzer_agent
+from app.crews.chat.models import IntentClassification
 from app.crews.chat.response_composer import create_response_composer_agent
 from app.crews.search.crew import SearchContext
 from app.llm.crewai_llm import get_crewai_llm
@@ -213,11 +214,19 @@ Understand what the user fundamentally wants to accomplish:
 
 Default to ACTION unless the message is clearly seeking information.
 
-Output format:
-Primary Intent: [SEARCH/ACTION]
-Reasoning: [Brief explanation of your decision based on semantic analysis]""",
+CRITICAL OUTPUT FORMAT:
+You MUST return a valid JSON object matching this schema:
+{{
+  "intent": "SEARCH" or "ACTION",
+  "reasoning": "Brief explanation of why this intent was chosen",
+  "confidence": 1.0
+}}
+
+The intent field must be EXACTLY "SEARCH" or "ACTION" (nothing else).
+Do NOT add extra fields. Do NOT wrap in markdown code blocks.""",
             agent=self.intent_analyzer_agent,
             expected_output="Intent classification (SEARCH or ACTION) with reasoning",
+            output_pydantic=IntentClassification,
         )
 
         # Parse intent early to enable delegation
@@ -241,8 +250,20 @@ Reasoning: [Brief explanation of your decision based on semantic analysis]""",
         kickoff_time = time.time() - kickoff_start
         logger.info(f"🕐 [TIMING] Intent crew.kickoff() completed in {kickoff_time:.2f}s")
         
-        intent_output = intent_result.raw if hasattr(intent_result, "raw") else str(intent_result)
-        logger.info(f"Intent analysis result: {intent_output[:200]}")
+        # Parse structured intent classification
+        try:
+            intent_classification = intent_result.pydantic
+            logger.info(f"Intent classification: {intent_classification.intent} (confidence: {intent_classification.confidence})")
+            logger.info(f"Reasoning: {intent_classification.reasoning}")
+            is_search = intent_classification.intent == "SEARCH"
+        except Exception as e:
+            logger.error(f"Failed to parse intent classification as Pydantic model: {e}")
+            logger.info("Using fallback: Checking for question patterns in message")
+            # Fallback: Simple heuristic - if message has question marks or starts with question words, assume SEARCH
+            message_lower = user_message.lower().strip()
+            question_starters = ["qué", "que", "quién", "quien", "cuándo", "cuando", "dónde", "donde", "cómo", "como", "por qué", "por que", "cuál", "cual", "what", "who", "when", "where", "how", "why", "which"]
+            is_search = "?" in user_message or any(message_lower.startswith(word) for word in question_starters)
+            logger.info(f"Fallback intent: {'SEARCH' if is_search else 'ACTION'}")
         
         intent_phase_time = time.time() - intent_phase_start
         logger.info(f"🕐 [TIMING] Total intent analysis phase: {intent_phase_time:.2f}s")
@@ -251,25 +272,13 @@ Reasoning: [Brief explanation of your decision based on semantic analysis]""",
         searched_results = None
         action_results = None
         
-        # Binary intent detection - SEARCH or ACTION (default)
-        intent_output_upper = intent_output.upper()
-        
-        # Check for SEARCH keywords (more specific, check first)
-        if any(keyword in intent_output_upper for keyword in [
-            "PRIMARY INTENT: SEARCH",
-            "INTENT: SEARCH",
-            "**SEARCH**",
-            "CLASSIFICATION: SEARCH",
-        ]) or (
-            "SEARCH" in intent_output_upper and 
-            any(word in intent_output_upper for word in ["WHAT", "WHEN", "WHERE", "WHO", "HOW", "WHY", "FIND", "SHOW", "LIST"])
-        ):
+        if is_search:
             intent = ConversationIntent.SEARCH
-            logger.info(f"SEARCH intent detected in output: {intent_output[:100]}")
+            logger.info("SEARCH intent detected - will delegate to UnifiedSearchCrew")
         else:
             # Default to ACTION for everything else
             intent = ConversationIntent.ACTION
-            logger.info(f"ACTION intent detected (default): {intent_output[:100]}")
+            logger.info("ACTION intent detected - will process directly or delegate to CaptureCrew")
         
         # Now perform delegation based on detected intent
         if intent == ConversationIntent.SEARCH:
