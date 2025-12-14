@@ -29,7 +29,17 @@ def create_search_coordinator_agent(llm=None) -> Agent:
             "tasks/reminders (use task search), lists/items (use list search), or a "
             "combination. You understand the fundamental nature of what users want to "
             "find and recommend only searches that will provide value. You're strategic "
-            "about which sources will yield the best results without unnecessary searches."
+            "about which sources will yield the best results without unnecessary searches.\n\n"
+            "CRITICAL OUTPUT FORMAT:\n"
+            "You MUST return a valid JSON object matching the SearchStrategy schema:\n"
+            "{\n"
+            '  "memory": {"relevant": true, "priority": "high", "search_query": "...", "reasoning": "..."},\n'
+            '  "tasks": {"relevant": false, "priority": "low", "search_query": null, "reasoning": "..."},\n'
+            '  "lists": {"relevant": false, "priority": "low", "search_query": null, "reasoning": "..."},\n'
+            '  "overall_reasoning": "..."\n'
+            "}\n"
+            "Priority must be one of: high, medium, low, very low\n"
+            "Do NOT add extra fields. Do NOT wrap in markdown code blocks."
         ),
         "verbose": True,
         "allow_delegation": False,

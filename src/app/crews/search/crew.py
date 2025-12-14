@@ -347,9 +347,36 @@ Make the response concise but informative.""",
             }
         )
         
-        # Parse coordinator output (Pydantic model)
-        search_strategy = coordinator_result.pydantic
-        logger.info(f"Coordinator strategy: {search_strategy}")
+        # Parse coordinator output (Pydantic model) with error handling
+        try:
+            search_strategy = coordinator_result.pydantic
+            logger.info(f"Coordinator strategy: {search_strategy}")
+        except Exception as e:
+            logger.error(f"Failed to parse coordinator output as Pydantic model: {e}")
+            logger.info("Using fallback: search all sources with HIGH priority")
+            # Fallback: search all sources with HIGH priority
+            from app.crews.search.models import SourceStrategy
+            search_strategy = SearchStrategy(
+                memory=SourceStrategy(
+                    relevant=True,
+                    priority="high",
+                    search_query=query,
+                    reasoning="Fallback: coordinator parsing failed"
+                ),
+                tasks=SourceStrategy(
+                    relevant=True,
+                    priority="high",
+                    search_query=query,
+                    reasoning="Fallback: coordinator parsing failed"
+                ),
+                lists=SourceStrategy(
+                    relevant=True,
+                    priority="high",
+                    search_query=query,
+                    reasoning="Fallback: coordinator parsing failed"
+                ),
+                overall_reasoning="Fallback strategy due to coordinator parsing error"
+            )
         
         # Helper function to determine if search should execute based on priority
         def should_execute_search(priority: str, has_high_priority_results: bool) -> bool:
