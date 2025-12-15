@@ -353,6 +353,10 @@ Make the response concise but informative.""",
             logger.info(f"Coordinator strategy: {search_strategy}")
         except Exception as e:
             logger.error(f"Failed to parse coordinator output as Pydantic model: {e}")
+            try:
+                logger.error(f"Coordinator raw output: {coordinator_result.raw}")
+            except:
+                logger.error(f"Could not access coordinator_result.raw, full object: {coordinator_result}")
             logger.info("Using fallback: search all sources with HIGH priority")
             # Fallback: search all sources with HIGH priority
             from app.crews.search.models import SourceStrategy
@@ -453,7 +457,16 @@ Make the response concise but informative.""",
                     high_priority_found = True
                     logger.info("HIGH priority searches found results - returning immediately")
                     # Return the result immediately, don't execute MEDIUM/LOW priority searches
-                    return self._parse_search_result(high_priority_result, query, context)
+                    final_answer = high_priority_result.raw if hasattr(high_priority_result, "raw") else str(high_priority_result)
+                    return SearchResult(
+                        query=query,
+                        sources_searched=sources,
+                        memory_results=[],
+                        task_results=[],
+                        list_results=[],
+                        combined_summary=final_answer,
+                        total_results=1,  # Found results in HIGH priority search
+                    )
             except Exception as e:
                 logger.warning(f"HIGH priority search execution had issues: {e}")
         
