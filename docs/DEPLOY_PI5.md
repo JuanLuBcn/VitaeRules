@@ -75,17 +75,20 @@ docker build -t vitaerules:latest .
 
 ### 8. Start the container
 ```bash
+# Create data directory for logs and database
+mkdir -p ~/VitaeRules_data
+
 docker run -d \
   --name vitaerules \
   --restart unless-stopped \
   --network host \
   -e APP_ENV=prod \
   -e OLLAMA_BASE_URL=http://localhost:11434 \
-  -v vitae_data:/app/data \
+  -v ~/VitaeRules_data:/app/data \
   vitaerules:latest
 ```
-docker compose up -d
-```
+
+**Note:** Changed from named volume to bind mount (`~/VitaeRules_data:/app/data`) so logs are accessible at `~/VitaeRules_data/logs/vitae_app.log`
 
 ### 9. Verify it's running
 ```bash
@@ -132,8 +135,14 @@ docker run -d \
   --network host \
   -e APP_ENV=prod \
   -e OLLAMA_BASE_URL=http://localhost:11434 \
-  -v vitae_data:/app/data \
+  -v ~/VitaeRules_data:/app/data \
   vitaerules:latest
+```
+
+### To fetch logs from Pi5 to Windows:
+```powershell
+# From Windows PowerShell
+scp root@homeassistant.local:~/VitaeRules_data/logs/vitae_app.log C:\Users\coses\Documents\GitRepos\VitaeRules\pi5_logs.txt
 ```
 
 ## Performance Notes

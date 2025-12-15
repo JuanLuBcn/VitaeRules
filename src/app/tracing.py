@@ -74,6 +74,24 @@ class Tracer:
         console_handler.setFormatter(console_format)
         self.logger.addHandler(console_handler)
 
+        # File handler (detailed logs to file for debugging)
+        try:
+            log_dir = Path("/app/data/logs")
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_file = log_dir / "vitae_app.log"
+            
+            file_handler = logging.FileHandler(log_file, encoding="utf-8")
+            file_handler.setLevel(self.level)
+            file_format = logging.Formatter(
+                "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+            file_handler.setFormatter(file_format)
+            self.logger.addHandler(file_handler)
+            self.logger.info(f"File logging enabled: {log_file}")
+        except Exception as e:
+            self.logger.warning(f"Could not set up file logging: {e}")
+
     def trace(
         self,
         event: TraceEvent,
